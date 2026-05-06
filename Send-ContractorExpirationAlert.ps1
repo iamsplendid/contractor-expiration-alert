@@ -315,7 +315,7 @@ $htmlBody = Build-HtmlEmail `
     -ScriptVersion     $ScriptVersion `
     -SmtpServer        $SmtpServer
 
-$subject = "Contractor Account Expiration Alert — $($expiringUsers.Count) account(s) expiring within $WarnDays days"
+$subject = "Contractor Account Expiration Alert - $($expiringUsers.Count) account(s) expiring within $WarnDays days"
 
 $mailParams = @{
     From       = $FromAddress
