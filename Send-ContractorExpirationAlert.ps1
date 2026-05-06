@@ -20,7 +20,12 @@
 .PARAMETER WarnDays
     Number of days ahead to warn about expiring accounts. Default: 14.
 .PARAMETER SmtpPort
-    SMTP port. Default: 25.
+    SMTP port. Default: 587.
+.PARAMETER Credential
+    PSCredential for authenticated SMTP submission. Required for Exchange Online (smtp.office365.com:587).
+    If MFA is enabled on the account, supply an app password as the credential password.
+.PARAMETER UseSSL
+    Use STARTTLS when connecting to the SMTP server. Required for smtp.office365.com:587.
 .PARAMETER ReportOnly
     Dry-run switch. Logs what would be sent without actually sending any email.
 .PARAMETER Diagnostics
@@ -30,9 +35,10 @@
 .PARAMETER SkipUpdateCheck
     Skip the automatic version update check at startup.
 .EXAMPLE
-    .\Send-ContractorExpirationAlert.ps1 -GroupName 'Contractors' -To 'it@contoso.com' -SmtpServer 'smtp.contoso.com' -FromAddress 'noreply@contoso.com'
+    $cred = Get-Credential
+    .\Send-ContractorExpirationAlert.ps1 -GroupName 'Contractors' -To 'it@contoso.com' -SmtpServer 'smtp.office365.com' -FromAddress 'alerts@contoso.com' -Credential $cred -UseSSL
 .EXAMPLE
-    .\Send-ContractorExpirationAlert.ps1 -GroupName 'Contractors' -To 'it@contoso.com' -SmtpServer 'smtp.contoso.com' -FromAddress 'noreply@contoso.com' -ReportOnly -Diagnostics
+    .\Send-ContractorExpirationAlert.ps1 -GroupName 'Contractors' -To 'it@contoso.com' -SmtpServer 'smtp.office365.com' -FromAddress 'alerts@contoso.com' -Credential $cred -UseSSL -ReportOnly -Diagnostics
 .NOTES
     Requires: ActiveDirectory PowerShell module (RSAT).
     This script is read-only with respect to Active Directory.
@@ -46,14 +52,16 @@ param(
     [Parameter(Mandatory = $true)]  [string]   $SmtpServer,
     [Parameter(Mandatory = $true)]  [string]   $FromAddress,
                                     [int]      $WarnDays   = 14,
-                                    [int]      $SmtpPort   = 25,
+                                    [int]         $SmtpPort   = 587,
+                                    [PSCredential]$Credential,
+                                    [switch]   $UseSSL,
                                     [switch]   $ReportOnly,
                                     [switch]   $Diagnostics,
                                     [int]      $LogHistory  = 30,
                                     [switch]   $SkipUpdateCheck
 )
 
-$ScriptVersion   = '1.0.0'
+$ScriptVersion   = '1.1.0'
 $ScriptUpdateUrl = 'https://raw.githubusercontent.com/iamsplendid/contractor-expiration-alert/master/Send-ContractorExpirationAlert.ps1'
 
 # ── Auto-update ──────────────────────────────────────────────────────────────
@@ -327,7 +335,9 @@ $mailParams = @{
     Port       = $SmtpPort
     Encoding   = 'UTF8'
 }
-if ($Cc) { $mailParams['Cc'] = $Cc }
+if ($Cc)         { $mailParams['Cc']         = $Cc }
+if ($Credential) { $mailParams['Credential'] = $Credential }
+if ($UseSSL)     { $mailParams['UseSsl']     = $true }
 
 if ($ReportOnly) {
     Write-Host ''
@@ -340,7 +350,7 @@ if ($ReportOnly) {
 } else {
     Write-Host "[INFO] Sending email to: $($To -join ', ')..." -ForegroundColor Cyan
     try {
-        Send-MailMessage @mailParams -WarningAction SilentlyContinue
+        Send-MailMessage @mailParams -WarningAction SilentlyContinue -ErrorAction Stop
         Write-Host '[INFO] Email sent successfully.' -ForegroundColor Green
     } catch {
         Write-Warning "Failed to send email: $($_.Exception.Message)"
