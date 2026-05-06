@@ -1,0 +1,353 @@
+<#
+.SYNOPSIS
+    Send advance expiration alerts for contractor domain accounts.
+.DESCRIPTION
+    Queries all members of an Active Directory security group for accounts whose
+    AccountExpirationDate falls within the configured warning window, then sends
+    a single HTML digest email to the configured recipients.
+    Accounts with no expiration date set are flagged in a separate section.
+    Intended to run as a daily scheduled task.
+.PARAMETER GroupName
+    Name of the AD security group whose members are contractor accounts.
+.PARAMETER To
+    One or more primary recipient email addresses.
+.PARAMETER Cc
+    One or more CC recipient email addresses (optional).
+.PARAMETER SmtpServer
+    SMTP relay hostname used to send the notification email.
+.PARAMETER FromAddress
+    Sender email address for the notification email.
+.PARAMETER WarnDays
+    Number of days ahead to warn about expiring accounts. Default: 14.
+.PARAMETER SmtpPort
+    SMTP port. Default: 25.
+.PARAMETER ReportOnly
+    Dry-run switch. Logs what would be sent without actually sending any email.
+.PARAMETER Diagnostics
+    Prints member counts and filter statistics to the console.
+.PARAMETER LogHistory
+    Number of days to retain transcript log files. Default: 30.
+.PARAMETER SkipUpdateCheck
+    Skip the automatic version update check at startup.
+.EXAMPLE
+    .\Send-ContractorExpirationAlert.ps1 -GroupName 'Contractors' -To 'it@contoso.com' -SmtpServer 'smtp.contoso.com' -FromAddress 'noreply@contoso.com'
+.EXAMPLE
+    .\Send-ContractorExpirationAlert.ps1 -GroupName 'Contractors' -To 'it@contoso.com' -SmtpServer 'smtp.contoso.com' -FromAddress 'noreply@contoso.com' -ReportOnly -Diagnostics
+.NOTES
+    Requires: ActiveDirectory PowerShell module (RSAT).
+    This script is read-only with respect to Active Directory.
+#>
+
+[CmdletBinding()]
+param(
+    [Parameter(Mandatory = $true)]  [string]   $GroupName,
+    [Parameter(Mandatory = $true)]  [string[]] $To,
+                                    [string[]] $Cc,
+    [Parameter(Mandatory = $true)]  [string]   $SmtpServer,
+    [Parameter(Mandatory = $true)]  [string]   $FromAddress,
+                                    [int]      $WarnDays   = 14,
+                                    [int]      $SmtpPort   = 25,
+                                    [switch]   $ReportOnly,
+                                    [switch]   $Diagnostics,
+                                    [int]      $LogHistory  = 30,
+                                    [switch]   $SkipUpdateCheck
+)
+
+$ScriptVersion   = '1.0.0'
+$ScriptUpdateUrl = 'https://raw.githubusercontent.com/iamsplendid/contractor-expiration-alert/master/Send-ContractorExpirationAlert.ps1'
+
+# ── Auto-update ──────────────────────────────────────────────────────────────
+if (-not $SkipUpdateCheck) {
+    try {
+        $remote = (Invoke-WebRequest -Uri $ScriptUpdateUrl -UseBasicParsing -TimeoutSec 8 -ErrorAction Stop).Content
+        if ($remote -match '\$ScriptVersion\s*=\s*[''"]([^''"]+)[''"]') {
+            $remoteVersion = $Matches[1]
+            if ([version]$remoteVersion -gt [version]$ScriptVersion) {
+                Write-Host "[UPDATE] New version $remoteVersion available. Updating..." -ForegroundColor Cyan
+                $scriptPath = $PSCommandPath
+                if ($scriptPath -and (Test-Path $scriptPath)) {
+                    [System.IO.File]::WriteAllText($scriptPath, $remote, [System.Text.Encoding]::UTF8)
+                    Write-Host "[UPDATE] Re-running new version..." -ForegroundColor Green
+                    $fwd = @{} + $PSBoundParameters
+                    $fwd['SkipUpdateCheck'] = $true
+                    & $scriptPath @fwd
+                    exit
+                } else {
+                    Write-Warning "[UPDATE] Cannot determine script path. Download latest: $ScriptUpdateUrl"
+                }
+            } else {
+                Write-Verbose "[UPDATE] Script is current ($ScriptVersion)."
+            }
+        }
+    } catch {
+        Write-Verbose "[UPDATE] Version check skipped: $($_.Exception.Message)"
+    }
+}
+
+# ── Transcript logging ───────────────────────────────────────────────────────
+$logsDir = Join-Path $PSScriptRoot 'logs'
+if (-not (Test-Path $logsDir)) { New-Item -ItemType Directory -Path $logsDir | Out-Null }
+
+$transcriptPath    = Join-Path $logsDir "ContractorExpirationAlert_$(Get-Date -Format 'yyyy-MM-dd_HHmmss').txt"
+$transcriptStarted = $false
+try {
+    Start-Transcript -Path $transcriptPath -UseMinimalHeader | Out-Null
+    $transcriptStarted = $true
+} catch {
+    try {
+        Start-Transcript -Path $transcriptPath | Out-Null
+        $transcriptStarted = $true
+    } catch {
+        Write-Warning "Could not start transcript: $($_.Exception.Message)"
+    }
+}
+
+Get-ChildItem -Path $logsDir -Filter 'ContractorExpirationAlert_*.txt' -ErrorAction SilentlyContinue |
+    Where-Object { $_.LastWriteTime -lt (Get-Date).AddDays(-$LogHistory) } |
+    Remove-Item -Force -ErrorAction SilentlyContinue
+
+$start = Get-Date
+
+Write-Host ''
+Write-Host ('=' * 70) -ForegroundColor Cyan
+Write-Host "  Contractor Expiration Alert  |  Group: $GroupName" -ForegroundColor Cyan
+Write-Host "  WarnDays : $WarnDays" -ForegroundColor Cyan
+Write-Host "  Time     : $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')" -ForegroundColor Cyan
+Write-Host "  Version  : $ScriptVersion" -ForegroundColor Cyan
+Write-Host ('=' * 70) -ForegroundColor Cyan
+
+# ── AD module check ──────────────────────────────────────────────────────────
+if (-not (Get-Module -ListAvailable -Name ActiveDirectory)) {
+    Write-Error 'ActiveDirectory module is not available. Install RSAT or run on a domain-joined machine with the module present.'
+    if ($transcriptStarted) { Stop-Transcript | Out-Null }
+    exit 1
+}
+Import-Module ActiveDirectory -ErrorAction Stop
+
+# ── Group query ──────────────────────────────────────────────────────────────
+Write-Host "[INFO] Querying group '$GroupName'..." -ForegroundColor Cyan
+try {
+    $groupMembers = @(Get-ADGroupMember -Identity $GroupName -Recursive -ErrorAction Stop)
+} catch {
+    Write-Error "Could not query group '$GroupName': $($_.Exception.Message)"
+    if ($transcriptStarted) { Stop-Transcript | Out-Null }
+    exit 1
+}
+Write-Host "[INFO] Found $($groupMembers.Count) member(s) in group '$GroupName'." -ForegroundColor Cyan
+
+# ── User property fetch ──────────────────────────────────────────────────────
+$allUsers = [System.Collections.Generic.List[pscustomobject]]::new()
+foreach ($member in $groupMembers) {
+    if ($member.objectClass -ne 'user') {
+        Write-Verbose "Skipping non-user object: $($member.SamAccountName) ($($member.objectClass))"
+        continue
+    }
+    try {
+        $u = Get-ADUser -Identity $member.DistinguishedName `
+            -Properties DisplayName, SamAccountName, EmailAddress, Enabled, AccountExpirationDate `
+            -ErrorAction Stop
+        $allUsers.Add([pscustomobject]@{
+            DisplayName           = $u.DisplayName
+            SamAccountName        = $u.SamAccountName
+            EmailAddress          = $u.EmailAddress
+            Enabled               = $u.Enabled
+            AccountExpirationDate = $u.AccountExpirationDate
+        })
+    } catch {
+        Write-Warning "Failed to retrieve properties for '$($member.SamAccountName)': $($_.Exception.Message)"
+    }
+}
+
+# ── Filtering ────────────────────────────────────────────────────────────────
+$now    = Get-Date
+$cutoff = $now.AddDays($WarnDays)
+
+$enabledUsers  = @($allUsers | Where-Object { $_.Enabled })
+$disabledUsers = @($allUsers | Where-Object { -not $_.Enabled })
+
+$noExpirationUsers = @($enabledUsers | Where-Object { -not $_.AccountExpirationDate })
+$withExpiration    = @($enabledUsers | Where-Object { $_.AccountExpirationDate })
+
+$expiringUsers = @(
+    $withExpiration |
+        Where-Object { $_.AccountExpirationDate -gt $now -and $_.AccountExpirationDate -le $cutoff } |
+        ForEach-Object {
+            $days = [math]::Ceiling(($_.AccountExpirationDate - $now).TotalDays)
+            [pscustomobject]@{
+                DisplayName           = $_.DisplayName
+                SamAccountName        = $_.SamAccountName
+                EmailAddress          = $_.EmailAddress
+                AccountExpirationDate = $_.AccountExpirationDate
+                DaysRemaining         = $days
+            }
+        } |
+        Sort-Object DaysRemaining
+)
+
+$beyondWindowCount = @($withExpiration | Where-Object { $_.AccountExpirationDate -gt $cutoff }).Count
+
+# ── Diagnostics ──────────────────────────────────────────────────────────────
+if ($Diagnostics) {
+    Write-Host ''
+    Write-Host 'Diagnostics:' -ForegroundColor Cyan
+    Write-Host "  Total group members (user objects)      : $($allUsers.Count)"
+    Write-Host "  Disabled (skipped)                      : $($disabledUsers.Count)"
+    Write-Host "  No expiration date set (flagged)        : $($noExpirationUsers.Count)"
+    Write-Host "  Expiring within $WarnDays day(s)               : $($expiringUsers.Count)"
+    Write-Host "  Expiring beyond $WarnDays day(s) (skipped)     : $beyondWindowCount"
+}
+
+# ── Nothing to report ────────────────────────────────────────────────────────
+if ($expiringUsers.Count -eq 0 -and $noExpirationUsers.Count -eq 0) {
+    Write-Host "[INFO] Nothing to report. No contractor accounts expiring within $WarnDays day(s) and no accounts missing an expiration date." -ForegroundColor Green
+    $elapsed = [int](New-TimeSpan -Start $start).TotalSeconds
+    Write-Host "[INFO] Completed in $elapsed second(s)." -ForegroundColor Cyan
+    if ($transcriptStarted) { Stop-Transcript | Out-Null }
+    exit 0
+}
+
+# ── HTML builder ─────────────────────────────────────────────────────────────
+function Build-HtmlEmail {
+    param(
+        [object[]] $ExpiringUsers,
+        [object[]] $NoExpirationUsers,
+        [int]      $WarnDays,
+        [string]   $GroupName,
+        [string]   $ScriptVersion,
+        [string]   $SmtpServer
+    )
+
+    $runTime = Get-Date -Format 'yyyy-MM-dd HH:mm:ss'
+
+    # Table 1 — Expiring Soon
+    $table1Html = ''
+    if ($ExpiringUsers.Count -gt 0) {
+        $rows = ''
+        foreach ($u in $ExpiringUsers) {
+            $expDate  = $u.AccountExpirationDate.ToString('yyyy-MM-dd')
+            $rowStyle = if ($u.DaysRemaining -le 3) { ' style="background-color:#ffd6d6;"' } else { '' }
+            $email    = if ($u.EmailAddress) { [System.Net.WebUtility]::HtmlEncode($u.EmailAddress) } else { '&mdash;' }
+            $rows += "
+            <tr$rowStyle>
+                <td style='padding:6px 10px; border:1px solid #ddd;'>$([System.Net.WebUtility]::HtmlEncode($u.DisplayName))</td>
+                <td style='padding:6px 10px; border:1px solid #ddd;'>$([System.Net.WebUtility]::HtmlEncode($u.SamAccountName))</td>
+                <td style='padding:6px 10px; border:1px solid #ddd;'>$email</td>
+                <td style='padding:6px 10px; border:1px solid #ddd;'>$expDate</td>
+                <td style='padding:6px 10px; border:1px solid #ddd; text-align:center;'>$($u.DaysRemaining)</td>
+            </tr>"
+        }
+        $table1Html = "
+    <h2 style='font-size:16px; color:#2f3b52; margin:20px 0 8px 0;'>Expiring Within $WarnDays Days ($($ExpiringUsers.Count) account(s))</h2>
+    <p style='font-size:13px; color:#555; margin:0 0 8px 0;'>Rows highlighted in red are expiring within 3 days.</p>
+    <table style='border-collapse:collapse; width:100%; font-size:14px;'>
+        <thead>
+            <tr style='background-color:#2f3b52; color:#fff;'>
+                <th style='padding:8px 10px; text-align:left;'>Display Name</th>
+                <th style='padding:8px 10px; text-align:left;'>Username</th>
+                <th style='padding:8px 10px; text-align:left;'>Email Address</th>
+                <th style='padding:8px 10px; text-align:left;'>Expiration Date</th>
+                <th style='padding:8px 10px; text-align:center;'>Days Remaining</th>
+            </tr>
+        </thead>
+        <tbody>$rows
+        </tbody>
+    </table>"
+    }
+
+    # Table 2 — No Expiration Date Configured
+    $table2Html = ''
+    if ($NoExpirationUsers.Count -gt 0) {
+        $rows = ''
+        foreach ($u in $NoExpirationUsers) {
+            $email = if ($u.EmailAddress) { [System.Net.WebUtility]::HtmlEncode($u.EmailAddress) } else { '&mdash;' }
+            $rows += "
+            <tr>
+                <td style='padding:6px 10px; border:1px solid #ddd;'>$([System.Net.WebUtility]::HtmlEncode($u.DisplayName))</td>
+                <td style='padding:6px 10px; border:1px solid #ddd;'>$([System.Net.WebUtility]::HtmlEncode($u.SamAccountName))</td>
+                <td style='padding:6px 10px; border:1px solid #ddd;'>$email</td>
+            </tr>"
+        }
+        $table2Html = "
+    <h2 style='font-size:16px; color:#2f3b52; margin:20px 0 8px 0;'>No Expiration Date Configured ($($NoExpirationUsers.Count) account(s))</h2>
+    <p style='font-size:13px; color:#555; margin:0 0 8px 0;'>The following contractor accounts are members of the group but have no account expiration date set. This may be a configuration oversight.</p>
+    <table style='border-collapse:collapse; width:100%; font-size:14px;'>
+        <thead>
+            <tr style='background-color:#2f3b52; color:#fff;'>
+                <th style='padding:8px 10px; text-align:left;'>Display Name</th>
+                <th style='padding:8px 10px; text-align:left;'>Username</th>
+                <th style='padding:8px 10px; text-align:left;'>Email Address</th>
+            </tr>
+        </thead>
+        <tbody>$rows
+        </tbody>
+    </table>"
+    }
+
+    return @"
+<!DOCTYPE html>
+<html>
+<body style="font-family:Segoe UI,Arial,sans-serif; color:#333; margin:0; padding:20px; background:#f5f5f5;">
+<div style="max-width:800px; margin:0 auto; background:#fff; padding:24px; border-radius:4px; border:1px solid #ddd;">
+
+    <h1 style="font-size:20px; color:#2f3b52; margin:0 0 4px 0;">Contractor Account Expiration Alert</h1>
+    <p style="font-size:13px; color:#777; margin:0 0 20px 0;">
+        Group: <strong>$([System.Net.WebUtility]::HtmlEncode($GroupName))</strong> &nbsp;|&nbsp; Run time: $runTime
+    </p>
+$table1Html
+$table2Html
+    <hr style="border:none; border-top:1px solid #eee; margin:24px 0 12px 0;">
+    <p style="font-size:12px; color:#aaa; margin:0;">
+        Send-ContractorExpirationAlert v$ScriptVersion &nbsp;|&nbsp; SMTP: $([System.Net.WebUtility]::HtmlEncode($SmtpServer))
+    </p>
+
+</div>
+</body>
+</html>
+"@
+}
+
+# ── Build and send email ─────────────────────────────────────────────────────
+$htmlBody = Build-HtmlEmail `
+    -ExpiringUsers     $expiringUsers `
+    -NoExpirationUsers $noExpirationUsers `
+    -WarnDays          $WarnDays `
+    -GroupName         $GroupName `
+    -ScriptVersion     $ScriptVersion `
+    -SmtpServer        $SmtpServer
+
+$subject = "Contractor Account Expiration Alert — $($expiringUsers.Count) account(s) expiring within $WarnDays days"
+
+$mailParams = @{
+    From       = $FromAddress
+    To         = $To
+    Subject    = $subject
+    Body       = $htmlBody
+    BodyAsHtml = $true
+    SmtpServer = $SmtpServer
+    Port       = $SmtpPort
+    Encoding   = 'UTF8'
+}
+if ($Cc) { $mailParams['Cc'] = $Cc }
+
+if ($ReportOnly) {
+    Write-Host ''
+    Write-Host '[REPORT ONLY] Would send email:' -ForegroundColor Yellow
+    Write-Host "  Subject            : $subject" -ForegroundColor Yellow
+    Write-Host "  To                 : $($To -join ', ')" -ForegroundColor Yellow
+    if ($Cc) { Write-Host "  Cc                 : $($Cc -join ', ')" -ForegroundColor Yellow }
+    Write-Host "  Expiring accounts  : $($expiringUsers.Count)" -ForegroundColor Yellow
+    Write-Host "  No-expiry accounts : $($noExpirationUsers.Count)" -ForegroundColor Yellow
+} else {
+    Write-Host "[INFO] Sending email to: $($To -join ', ')..." -ForegroundColor Cyan
+    try {
+        Send-MailMessage @mailParams -WarningAction SilentlyContinue
+        Write-Host '[INFO] Email sent successfully.' -ForegroundColor Green
+    } catch {
+        Write-Warning "Failed to send email: $($_.Exception.Message)"
+    }
+}
+
+$elapsed = [int](New-TimeSpan -Start $start).TotalSeconds
+Write-Host "[INFO] Completed in $elapsed second(s)." -ForegroundColor Cyan
+
+if ($transcriptStarted) { Stop-Transcript | Out-Null }
