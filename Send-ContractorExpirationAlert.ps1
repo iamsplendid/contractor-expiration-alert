@@ -71,7 +71,7 @@ if (-not $SkipUpdateCheck) {
                     $fwd = @{} + $PSBoundParameters
                     $fwd['SkipUpdateCheck'] = $true
                     & $scriptPath @fwd
-                    exit
+                    exit $LASTEXITCODE
                 } else {
                     Write-Warning "[UPDATE] Cannot determine script path. Download latest: $ScriptUpdateUrl"
                 }
@@ -229,7 +229,7 @@ function Build-HtmlEmail {
             $email    = if ($u.EmailAddress) { [System.Net.WebUtility]::HtmlEncode($u.EmailAddress) } else { '&mdash;' }
             $rows += "
             <tr$rowStyle>
-                <td style='padding:6px 10px; border:1px solid #ddd;'>$([System.Net.WebUtility]::HtmlEncode($u.DisplayName))</td>
+                <td style='padding:6px 10px; border:1px solid #ddd;'>$(if ($u.DisplayName) { [System.Net.WebUtility]::HtmlEncode($u.DisplayName) } else { '&mdash;' })</td>
                 <td style='padding:6px 10px; border:1px solid #ddd;'>$([System.Net.WebUtility]::HtmlEncode($u.SamAccountName))</td>
                 <td style='padding:6px 10px; border:1px solid #ddd;'>$email</td>
                 <td style='padding:6px 10px; border:1px solid #ddd;'>$expDate</td>
@@ -262,7 +262,7 @@ function Build-HtmlEmail {
             $email = if ($u.EmailAddress) { [System.Net.WebUtility]::HtmlEncode($u.EmailAddress) } else { '&mdash;' }
             $rows += "
             <tr>
-                <td style='padding:6px 10px; border:1px solid #ddd;'>$([System.Net.WebUtility]::HtmlEncode($u.DisplayName))</td>
+                <td style='padding:6px 10px; border:1px solid #ddd;'>$(if ($u.DisplayName) { [System.Net.WebUtility]::HtmlEncode($u.DisplayName) } else { '&mdash;' })</td>
                 <td style='padding:6px 10px; border:1px solid #ddd;'>$([System.Net.WebUtility]::HtmlEncode($u.SamAccountName))</td>
                 <td style='padding:6px 10px; border:1px solid #ddd;'>$email</td>
             </tr>"
@@ -344,6 +344,8 @@ if ($ReportOnly) {
         Write-Host '[INFO] Email sent successfully.' -ForegroundColor Green
     } catch {
         Write-Warning "Failed to send email: $($_.Exception.Message)"
+        if ($transcriptStarted) { Stop-Transcript | Out-Null }
+        exit 1
     }
 }
 
