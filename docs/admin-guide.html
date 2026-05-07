@@ -186,12 +186,90 @@ section { margin-bottom: 0.5rem; }
 
 <section>
   <h2 id="contractors-group">4. The Contractors Security Group</h2>
-  <p>Content coming in Task 3.</p>
+  <p>In your organization's user directory (Active Directory), there is a group called <strong>Contractors</strong>. The script monitors every account that is a member of this group &mdash; and only those accounts. It does not look at every user in the organization.</p>
+  <h3>What this means for you</h3>
+  <ul>
+    <li>If a contractor account is <strong>not</strong> in the Contractors group, the script will not warn about it &mdash; even if it is about to expire.</li>
+    <li>If a contractor account is in the group but has <strong>no expiration date set</strong>, the script flags it in a separate section of the email as a potential oversight. Every contractor account should have an expiration date.</li>
+    <li>Accounts that are <strong>disabled</strong> are ignored &mdash; the script only checks active accounts.</li>
+  </ul>
+  <h3>Managing group membership</h3>
+  <p>Group membership is managed by your IT administrator. If a contractor should be receiving expiration warnings but is not appearing in the alert emails, ask IT to:</p>
+  <ol>
+    <li>Add the contractor's account to the <strong>Contractors</strong> group in Active Directory.</li>
+    <li>Make sure an expiration date is set on that account.</li>
+  </ol>
 </section>
 
 <section>
   <h2 id="options">5. Script Options</h2>
-  <p>Content coming in Task 3.</p>
+  <p>The script accepts several options that control how it behaves. The two required ones must be provided every time the script runs (they are included in the scheduled task command). All others are optional.</p>
+  <table>
+    <thead>
+      <tr>
+        <th>Option</th>
+        <th>What it does</th>
+        <th>Required?</th>
+        <th>Default</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><code>-GroupName</code></td>
+        <td>The name of the security group to monitor. This must match exactly what is in Active Directory.</td>
+        <td>Yes</td>
+        <td>&mdash;</td>
+      </tr>
+      <tr>
+        <td><code>-To</code></td>
+        <td>Who receives the alert email. You can list more than one address, separated by commas.</td>
+        <td>Yes</td>
+        <td>&mdash;</td>
+      </tr>
+      <tr>
+        <td><code>-Cc</code></td>
+        <td>Additional people who receive a copy of the email. Optional.</td>
+        <td>No</td>
+        <td>None</td>
+      </tr>
+      <tr>
+        <td><code>-WarnDays</code></td>
+        <td>How many days ahead to look for expiring accounts.</td>
+        <td>No</td>
+        <td>14</td>
+      </tr>
+      <tr>
+        <td><code>-Setup</code></td>
+        <td>Runs the first-time setup wizard. Also used when updating the security credential after it expires.</td>
+        <td>No</td>
+        <td>Off</td>
+      </tr>
+      <tr>
+        <td><code>-ReportOnly</code></td>
+        <td>Preview mode &mdash; shows what the email would say without actually sending it. Useful for testing.</td>
+        <td>No</td>
+        <td>Off</td>
+      </tr>
+      <tr>
+        <td><code>-Diagnostics</code></td>
+        <td>Prints extra detail to the screen while running. Useful when troubleshooting a problem.</td>
+        <td>No</td>
+        <td>Off</td>
+      </tr>
+      <tr>
+        <td><code>-LogHistory</code></td>
+        <td>How many days of log files to keep before they are automatically deleted.</td>
+        <td>No</td>
+        <td>30</td>
+      </tr>
+      <tr>
+        <td><code>-SkipUpdateCheck</code></td>
+        <td>Skips checking online for a newer version of the script at startup.</td>
+        <td>No</td>
+        <td>Off</td>
+      </tr>
+    </tbody>
+  </table>
 </section>
 
 <section>
