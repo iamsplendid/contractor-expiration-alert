@@ -138,17 +138,50 @@ section { margin-bottom: 0.5rem; }
 
 <section>
   <h2 id="overview">1. Overview</h2>
-  <p>Content coming in Task 2.</p>
+  <p>Once a day, the script checks a list of contractor accounts in your organization and sends an email warning if any of those accounts are about to expire. It looks 14 days ahead by default. If nothing is expiring, no email is sent.</p>
+  <h3>Why it exists</h3>
+  <p>Contractor accounts in your organization's user directory (called Active Directory) expire on a set date. If no one notices in time, the contractor loses access to systems and work stops. This script gives advance warning so the account can be renewed before that happens.</p>
+  <h3>How it works</h3>
+  <p>The script runs automatically on a schedule. It reads from a group called <strong>Contractors</strong> in your organization's directory, finds any accounts expiring within the next 14 days, and sends one summary email to the addresses you configure. If no accounts are expiring soon, it quietly finishes without sending anything.</p>
 </section>
 
 <section>
   <h2 id="requirements">2. Requirements</h2>
-  <p>Content coming in Task 2.</p>
+  <p>Before the script can be used, the following must be in place:</p>
+  <ul>
+    <li><strong>A Windows server or computer</strong> that is connected to the company network and can access the organization's user directory (Active Directory). This is typically any domain-joined Windows server.</li>
+    <li><strong>PowerShell</strong> &mdash; included with Windows; no separate installation needed.</li>
+    <li><strong>RSAT (Remote Server Administration Tools)</strong> &mdash; a free Windows add-on that lets PowerShell read user account information. Your IT administrator can install this. On Windows Server, it is usually already available.</li>
+    <li><strong>A Microsoft 365 shared mailbox</strong> for the script to send email from. A shared mailbox does not require a license. Ask your IT administrator if you do not already have one set up.</li>
+    <li><strong>A security permission set up in Microsoft's cloud portal</strong> &mdash; this tells Microsoft 365 that the script is allowed to send email on behalf of your organization. This is a one-time step covered in the next section.</li>
+  </ul>
 </section>
 
 <section>
   <h2 id="app-registration">3. Setting Up the Security Permission (App Registration)</h2>
-  <p>Content coming in Task 2.</p>
+  <p>Before the script can send email, it needs a <em>permission slip</em> from Microsoft. This is called an <strong>App Registration</strong>. Think of it as registering the script as a trusted application that is allowed to send email through your organization's Microsoft 365 account. This only needs to be done once.</p>
+  <p>You will need an administrator account to complete these steps. If you do not have one, ask your IT administrator to do this part for you &mdash; they will need to give you three values at the end: Tenant ID, Client ID, and the security credential.</p>
+  <h3>Step-by-step instructions</h3>
+  <ol>
+    <li>Sign in to <strong>Microsoft's cloud portal</strong> at <code>entra.microsoft.com</code> using an administrator account.</li>
+    <li>In the left navigation, click <strong>App registrations</strong>, then click <strong>New registration</strong>.</li>
+    <li>Give the app any name &mdash; for example, <em>Contractor Expiration Alert</em>. Leave all other settings at their defaults and click <strong>Register</strong>.</li>
+    <li>You will land on the app's Overview page. Copy and save two values from this page:
+      <ul>
+        <li><strong>Application (client) ID</strong></li>
+        <li><strong>Directory (tenant) ID</strong></li>
+      </ul>
+    </li>
+    <li>Click <strong>API permissions</strong> in the left navigation. Click <strong>Add a permission</strong>, choose <strong>Microsoft Graph</strong>, then choose <strong>Application permissions</strong>.</li>
+    <li>In the search box, type <code>Mail.Send</code>. Check the box next to <strong>Mail.Send</strong> and click <strong>Add permissions</strong>.</li>
+    <li>Click <strong>Grant admin consent for [your organization]</strong> and confirm. The status column next to Mail.Send should change to a green checkmark.</li>
+    <li>Click <strong>Certificates &amp; secrets</strong> in the left navigation. Click <strong>New client secret</strong>. Give it any description, choose an expiration of 24 months, and click <strong>Add</strong>.</li>
+    <li><strong>Important:</strong> Copy the secret's <strong>Value</strong> immediately &mdash; it is only displayed once. Note the expiration date somewhere safe (a calendar reminder 30 days before it expires is recommended).</li>
+  </ol>
+  <p>You now have the three values needed for first-time setup: Tenant ID, Client ID, and the security credential. Keep these in a secure place.</p>
+  <div class="note">
+    <p><strong>What is the security credential?</strong> Think of it like a password for the script. It proves to Microsoft that the script has permission to send email on behalf of your organization. It expires after the period you chose (typically 24 months) and must be renewed &mdash; see <a href="#secret-rotation">Section 8</a> for instructions.</p>
+  </div>
 </section>
 
 <section>
