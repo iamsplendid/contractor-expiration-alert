@@ -139,7 +139,10 @@ function Send-GraphMail {
 }
 
 function Invoke-SetupWizard {
-    param([string]$ConfigPath)
+    param(
+        [string]$ConfigPath,
+        [bool]  $TranscriptStarted = $false
+    )
 
     Write-Host ''
     Write-Host ('=' * 70) -ForegroundColor Cyan
@@ -179,6 +182,7 @@ function Invoke-SetupWizard {
     } catch {
         Write-Warning "Credential test failed: $($_.Exception.Message)"
         Write-Warning 'Config not saved. Correct the values and re-run with -Setup.'
+        if ($TranscriptStarted) { Stop-Transcript | Out-Null }
         exit 1
     }
 
@@ -256,7 +260,7 @@ Write-Host ('=' * 70) -ForegroundColor Cyan
 # ── Config / setup ───────────────────────────────────────────────────────────
 $configPath = Get-AlertConfigPath
 if ($Setup) {
-    Invoke-SetupWizard -ConfigPath $configPath
+    Invoke-SetupWizard -ConfigPath $configPath -TranscriptStarted $transcriptStarted
 }
 
 $config = $null
@@ -505,8 +509,10 @@ if ($ReportOnly) {
         Write-Host '[INFO] Email sent successfully.' -ForegroundColor Green
     } catch {
         $statusCode = $_.Exception.Response.StatusCode.value__
-        $hint = if ($statusCode -in 401, 403) {
+        $hint = if ($statusCode -eq 401) {
             ' Your client secret may be wrong or expired -- re-run with -Setup to update the config.'
+        } elseif ($statusCode -eq 403) {
+            ' The app may lack Mail.Send permission or admin consent, or the From address may not be a licensed mailbox.'
         } else { '' }
         Write-Warning "Failed to send email: $($_.Exception.Message).$hint"
         if ($transcriptStarted) { Stop-Transcript | Out-Null }
