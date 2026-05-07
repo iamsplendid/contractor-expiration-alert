@@ -143,6 +143,61 @@ function Send-GraphMail {
         -ErrorAction Stop | Out-Null
 }
 
+function Invoke-SetupWizard {
+    param([string]$ConfigPath)
+
+    Write-Host ''
+    Write-Host ('=' * 70) -ForegroundColor Cyan
+    Write-Host '  Contractor Alert - First-Time Setup' -ForegroundColor Cyan
+    Write-Host ('=' * 70) -ForegroundColor Cyan
+    Write-Host ''
+    Write-Host 'Complete these steps in the Entra ID portal before continuing:' -ForegroundColor Yellow
+    Write-Host '  1. Register an application (any name, no redirect URI needed)'
+    Write-Host '  2. API permissions -> Add -> Microsoft Graph -> Application permissions -> Mail.Send'
+    Write-Host '  3. Grant admin consent for your organization'
+    Write-Host '  4. Certificates & secrets -> New client secret -> copy the value (shown once)'
+    Write-Host '  5. Note the Tenant ID and Client ID from the app Overview page'
+    Write-Host ''
+
+    do {
+        $tenantId = Read-Host 'Enter Tenant ID'
+        if (-not (Test-IsGuid $tenantId)) { Write-Warning 'Invalid format. Expected: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx' }
+    } until (Test-IsGuid $tenantId)
+
+    do {
+        $clientId = Read-Host 'Enter Client ID'
+        if (-not (Test-IsGuid $clientId)) { Write-Warning 'Invalid format. Expected: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx' }
+    } until (Test-IsGuid $clientId)
+
+    $clientSecret = Read-Host 'Enter Client Secret' -AsSecureString
+
+    do {
+        $fromAddress = Read-Host 'Enter From Address (sending mailbox UPN, e.g. alerts@contoso.com)'
+        if (-not (Test-IsEmail $fromAddress)) { Write-Warning 'Invalid format. Expected a valid email address.' }
+    } until (Test-IsEmail $fromAddress)
+
+    Write-Host ''
+    Write-Host '[INFO] Testing credentials against Entra ID...' -ForegroundColor Cyan
+    try {
+        $null = Get-GraphAccessToken -TenantId $tenantId -ClientId $clientId -ClientSecret $clientSecret
+        Write-Host '[INFO] Credentials verified successfully.' -ForegroundColor Green
+    } catch {
+        Write-Warning "Credential test failed: $($_.Exception.Message)"
+        Write-Warning 'Config not saved. Correct the values and re-run with -Setup.'
+        exit 1
+    }
+
+    $config = @{
+        TenantId     = $tenantId
+        ClientId     = $clientId
+        ClientSecret = $clientSecret
+        FromAddress  = $fromAddress
+    }
+    Save-AlertConfig -Config $config -Path $ConfigPath
+    Write-Host "[INFO] Config saved to: $ConfigPath" -ForegroundColor Green
+    Write-Host ''
+}
+
 # ── Auto-update ──────────────────────────────────────────────────────────────
 if (-not $SkipUpdateCheck) {
     try {
