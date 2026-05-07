@@ -1,0 +1,777 @@
+# Admin Guide Implementation Plan
+
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+
+**Goal:** Create `docs/admin-guide.html` — a self-contained HTML administrator guide for `Send-ContractorExpirationAlert.ps1`, written for a non-technical audience (e.g. an office manager).
+
+**Architecture:** Single HTML file with inline CSS, linked table of contents, and 9 sections. No external dependencies. Print-friendly. Each section is a plain-English walkthrough of one aspect of running and maintaining the script.
+
+**Tech Stack:** HTML5, inline CSS only (no JavaScript, no external stylesheets)
+
+---
+
+## Files
+
+- Create: `docs/admin-guide.html`
+
+---
+
+### Task 1: HTML shell — CSS, page header, TOC, and empty section stubs
+
+**Files:**
+- Create: `docs/admin-guide.html`
+
+- [ ] **Step 1: Create the file with the complete shell**
+
+Create `docs/admin-guide.html` with the following content. This establishes the visual design, navigation structure, and empty section stubs that subsequent tasks will fill in.
+
+```html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Contractor Expiration Alert - Administrator Guide</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+    font-family: 'Segoe UI', Arial, sans-serif;
+    font-size: 16px;
+    line-height: 1.7;
+    color: #1a1a1a;
+    background: #fff;
+}
+.container {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 2rem 2.5rem 5rem;
+}
+h1 {
+    font-size: 1.75rem;
+    margin-bottom: 0.15rem;
+    color: #1a3a6b;
+}
+.subtitle {
+    font-size: 1rem;
+    color: #555;
+    font-weight: normal;
+    display: block;
+    margin-bottom: 1.75rem;
+}
+h2 {
+    font-size: 1.25rem;
+    margin: 2.5rem 0 0.75rem;
+    padding-bottom: 0.3rem;
+    border-bottom: 2px solid #dce6f7;
+    color: #1a3a6b;
+}
+h3 {
+    font-size: 1rem;
+    font-weight: bold;
+    margin: 1.25rem 0 0.4rem;
+    color: #333;
+}
+p { margin-bottom: 0.8rem; }
+ul, ol {
+    margin: 0.5rem 0 0.9rem 1.75rem;
+}
+li { margin-bottom: 0.35rem; }
+code {
+    font-family: Consolas, 'Courier New', monospace;
+    font-size: 0.88em;
+    background: #f0f4fa;
+    border: 1px solid #ccd9ef;
+    border-radius: 3px;
+    padding: 0.1em 0.45em;
+    white-space: nowrap;
+}
+nav {
+    background: #f5f8ff;
+    border: 1px solid #ccd9ef;
+    border-radius: 5px;
+    padding: 1.25rem 1.75rem;
+    margin: 0.5rem 0 2rem;
+}
+nav h2 {
+    font-size: 1rem;
+    border: none;
+    margin-top: 0;
+    margin-bottom: 0.6rem;
+    color: #333;
+}
+nav ol { margin-bottom: 0; }
+nav a { color: #1a3a6b; text-decoration: none; }
+nav a:hover { text-decoration: underline; }
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 0.75rem 0 1.25rem;
+    font-size: 0.94rem;
+}
+th {
+    background: #1a3a6b;
+    color: #fff;
+    text-align: left;
+    padding: 0.55rem 0.85rem;
+}
+td {
+    padding: 0.5rem 0.85rem;
+    border-bottom: 1px solid #dce6f7;
+    vertical-align: top;
+}
+tr:nth-child(even) td { background: #f5f8ff; }
+.note {
+    background: #fff8e1;
+    border-left: 4px solid #e8a000;
+    padding: 0.75rem 1rem;
+    margin: 1rem 0;
+    border-radius: 0 4px 4px 0;
+}
+.note p:last-child { margin-bottom: 0; }
+section { margin-bottom: 0.5rem; }
+@media print {
+    body { font-size: 11pt; }
+    .container { padding: 0; max-width: 100%; }
+    h2 { page-break-after: avoid; color: #000; border-bottom-color: #999; }
+    h3 { page-break-after: avoid; }
+    table { page-break-inside: avoid; }
+    .note { page-break-inside: avoid; border-left-color: #999; }
+    code { background: none; border: none; }
+    nav a::after { content: " (see section " attr(href) ")"; font-size: 0.85em; color: #555; }
+}
+</style>
+</head>
+<body>
+<div class="container">
+
+<h1>Contractor Expiration Alert</h1>
+<span class="subtitle">Administrator Guide &mdash; version 2.0</span>
+
+<nav>
+  <h2>Table of Contents</h2>
+  <ol>
+    <li><a href="#overview">Overview</a></li>
+    <li><a href="#requirements">Requirements</a></li>
+    <li><a href="#app-registration">Setting Up the Security Permission (App Registration)</a></li>
+    <li><a href="#contractors-group">The Contractors Security Group</a></li>
+    <li><a href="#options">Script Options</a></li>
+    <li><a href="#first-time-setup">First-Time Setup</a></li>
+    <li><a href="#scheduled-task">Scheduled Task</a></li>
+    <li><a href="#secret-rotation">Renewing the Security Credential</a></li>
+    <li><a href="#troubleshooting">Troubleshooting</a></li>
+  </ol>
+</nav>
+
+<section id="overview">
+  <h2>1. Overview</h2>
+  <p>Content coming in Task 2.</p>
+</section>
+
+<section id="requirements">
+  <h2>2. Requirements</h2>
+  <p>Content coming in Task 2.</p>
+</section>
+
+<section id="app-registration">
+  <h2>3. Setting Up the Security Permission (App Registration)</h2>
+  <p>Content coming in Task 2.</p>
+</section>
+
+<section id="contractors-group">
+  <h2>4. The Contractors Security Group</h2>
+  <p>Content coming in Task 3.</p>
+</section>
+
+<section id="options">
+  <h2>5. Script Options</h2>
+  <p>Content coming in Task 3.</p>
+</section>
+
+<section id="first-time-setup">
+  <h2>6. First-Time Setup</h2>
+  <p>Content coming in Task 4.</p>
+</section>
+
+<section id="scheduled-task">
+  <h2>7. Scheduled Task</h2>
+  <p>Content coming in Task 4.</p>
+</section>
+
+<section id="secret-rotation">
+  <h2>8. Renewing the Security Credential</h2>
+  <p>Content coming in Task 5.</p>
+</section>
+
+<section id="troubleshooting">
+  <h2>9. Troubleshooting</h2>
+  <p>Content coming in Task 5.</p>
+</section>
+
+</div>
+</body>
+</html>
+```
+
+- [ ] **Step 2: Verify the shell renders and navigation works**
+
+Open `docs/admin-guide.html` in a browser. Verify:
+- The page title and subtitle appear at the top
+- The Table of Contents box is styled (blue background, border, indented list)
+- Each TOC link jumps to the correct section heading (click each one)
+- All 9 section headings appear with the correct numbering and blue underline style
+
+Also run this to confirm all 9 section IDs exist:
+
+```bash
+grep -oP 'id="[^"]*"' docs/admin-guide.html | sort
+```
+
+Expected output (9 lines):
+```
+id="app-registration"
+id="contractors-group"
+id="first-time-setup"
+id="options"
+id="overview"
+id="requirements"
+id="scheduled-task"
+id="secret-rotation"
+id="troubleshooting"
+```
+
+- [ ] **Step 3: Commit**
+
+```bash
+git add docs/admin-guide.html
+git commit -m "docs: add admin-guide.html shell with CSS and TOC"
+```
+
+---
+
+### Task 2: Sections 1, 2, and 3 — Overview, Requirements, App Registration
+
+**Files:**
+- Modify: `docs/admin-guide.html`
+
+- [ ] **Step 1: Replace the Section 1 stub with the Overview content**
+
+In `docs/admin-guide.html`, replace:
+
+```html
+<section id="overview">
+  <h2>1. Overview</h2>
+  <p>Content coming in Task 2.</p>
+</section>
+```
+
+With:
+
+```html
+<section id="overview">
+  <h2>1. Overview</h2>
+  <p>Once a day, the script checks a list of contractor accounts in your organization and sends an email warning if any of those accounts are about to expire. It looks 14 days ahead by default. If nothing is expiring, no email is sent.</p>
+  <h3>Why it exists</h3>
+  <p>Contractor accounts in your organization's user directory (called Active Directory) expire on a set date. If no one notices in time, the contractor loses access to systems and work stops. This script gives advance warning so the account can be renewed before that happens.</p>
+  <h3>How it works</h3>
+  <p>The script runs automatically on a schedule. It reads from a group called <strong>Contractors</strong> in your organization's directory, finds any accounts expiring within the next 14 days, and sends one summary email to the addresses you configure. If no accounts are expiring soon, it quietly finishes without sending anything.</p>
+</section>
+```
+
+- [ ] **Step 2: Replace the Section 2 stub with the Requirements content**
+
+In `docs/admin-guide.html`, replace:
+
+```html
+<section id="requirements">
+  <h2>2. Requirements</h2>
+  <p>Content coming in Task 2.</p>
+</section>
+```
+
+With:
+
+```html
+<section id="requirements">
+  <h2>2. Requirements</h2>
+  <p>Before the script can be used, the following must be in place:</p>
+  <ul>
+    <li><strong>A Windows server or computer</strong> that is connected to the company network and can access the organization's user directory (Active Directory). This is typically any domain-joined Windows server.</li>
+    <li><strong>PowerShell</strong> &mdash; included with Windows; no separate installation needed.</li>
+    <li><strong>RSAT (Remote Server Administration Tools)</strong> &mdash; a free Windows add-on that lets PowerShell read user account information. Your IT administrator can install this. On Windows Server, it is usually already available.</li>
+    <li><strong>A Microsoft 365 shared mailbox</strong> for the script to send email from. A shared mailbox does not require a license. Ask your IT administrator if you do not already have one set up.</li>
+    <li><strong>A security permission set up in Microsoft's cloud portal</strong> &mdash; this tells Microsoft 365 that the script is allowed to send email on behalf of your organization. This is a one-time step covered in the next section.</li>
+  </ul>
+</section>
+```
+
+- [ ] **Step 3: Replace the Section 3 stub with the App Registration content**
+
+In `docs/admin-guide.html`, replace:
+
+```html
+<section id="app-registration">
+  <h2>3. Setting Up the Security Permission (App Registration)</h2>
+  <p>Content coming in Task 2.</p>
+</section>
+```
+
+With:
+
+```html
+<section id="app-registration">
+  <h2>3. Setting Up the Security Permission (App Registration)</h2>
+  <p>Before the script can send email, it needs a <em>permission slip</em> from Microsoft. This is called an <strong>App Registration</strong>. Think of it as registering the script as a trusted application that is allowed to send email through your organization's Microsoft 365 account. This only needs to be done once.</p>
+  <p>You will need an administrator account to complete these steps. If you do not have one, ask your IT administrator to do this part for you &mdash; they will need to give you three values at the end (Tenant ID, Client ID, and the security credential).</p>
+  <h3>Step-by-step instructions</h3>
+  <ol>
+    <li>Sign in to <strong>Microsoft's cloud portal</strong> at <code>entra.microsoft.com</code> using an administrator account.</li>
+    <li>In the left navigation, click <strong>App registrations</strong>, then click <strong>New registration</strong>.</li>
+    <li>Give the app any name &mdash; for example, <em>Contractor Expiration Alert</em>. Leave all other settings at their defaults and click <strong>Register</strong>.</li>
+    <li>You will land on the app's Overview page. Copy and save two values from this page:
+      <ul>
+        <li><strong>Application (client) ID</strong></li>
+        <li><strong>Directory (tenant) ID</strong></li>
+      </ul>
+    </li>
+    <li>Click <strong>API permissions</strong> in the left navigation. Click <strong>Add a permission</strong>, choose <strong>Microsoft Graph</strong>, then choose <strong>Application permissions</strong>.</li>
+    <li>In the search box, type <code>Mail.Send</code>. Check the box next to <strong>Mail.Send</strong> and click <strong>Add permissions</strong>.</li>
+    <li>Click <strong>Grant admin consent for [your organization]</strong> and confirm. The status column next to Mail.Send should change to a green checkmark.</li>
+    <li>Click <strong>Certificates &amp; secrets</strong> in the left navigation. Click <strong>New client secret</strong>. Give it any description, choose an expiration of 24 months, and click <strong>Add</strong>.</li>
+    <li><strong>Important:</strong> Copy the secret's <strong>Value</strong> immediately &mdash; it is only displayed once. Note the expiration date somewhere safe (a calendar reminder 30 days before it expires is recommended).</li>
+  </ol>
+  <p>You now have the three values needed for first-time setup: Tenant ID, Client ID, and the security credential. Keep these in a secure place.</p>
+  <div class="note">
+    <p><strong>What is the security credential?</strong> Think of it like a password for the script. It proves to Microsoft that the script has permission to send email on behalf of your organization. It expires after the period you chose (typically 24 months) and must be renewed &mdash; see <a href="#secret-rotation">Section 8</a> for instructions.</p>
+  </div>
+</section>
+```
+
+- [ ] **Step 4: Verify sections 1-3 in a browser**
+
+Open `docs/admin-guide.html` in a browser. Verify:
+- Section 1 shows three paragraphs (the overview, "Why it exists," and "How it works")
+- Section 2 shows a bulleted list of 5 requirements with bold labels
+- Section 3 shows the intro paragraph, a numbered list of 9 steps, a summary paragraph, and a yellow note box
+- The note box in section 3 has a gold left border and the link to "Section 8" is clickable and jumps to the correct heading
+
+- [ ] **Step 5: Commit**
+
+```bash
+git add docs/admin-guide.html
+git commit -m "docs: fill in admin guide sections 1-3"
+```
+
+---
+
+### Task 3: Sections 4 and 5 — Contractors Group, Script Options
+
+**Files:**
+- Modify: `docs/admin-guide.html`
+
+- [ ] **Step 1: Replace the Section 4 stub with the Contractors Group content**
+
+In `docs/admin-guide.html`, replace:
+
+```html
+<section id="contractors-group">
+  <h2>4. The Contractors Security Group</h2>
+  <p>Content coming in Task 3.</p>
+</section>
+```
+
+With:
+
+```html
+<section id="contractors-group">
+  <h2>4. The Contractors Security Group</h2>
+  <p>In your organization's user directory (Active Directory), there is a group called <strong>Contractors</strong>. The script monitors every account that is a member of this group &mdash; and only those accounts. It does not look at every user in the organization.</p>
+  <h3>What this means for you</h3>
+  <ul>
+    <li>If a contractor account is <strong>not</strong> in the Contractors group, the script will not warn about it &mdash; even if it is about to expire.</li>
+    <li>If a contractor account is in the group but has <strong>no expiration date set</strong>, the script flags it in a separate section of the email as a potential oversight. Every contractor account should have an expiration date.</li>
+    <li>Accounts that are <strong>disabled</strong> are ignored &mdash; the script only checks active accounts.</li>
+  </ul>
+  <h3>Managing group membership</h3>
+  <p>Group membership is managed by your IT administrator. If a contractor should be receiving expiration warnings but is not appearing in the alert emails, ask IT to:</p>
+  <ol>
+    <li>Add the contractor's account to the <strong>Contractors</strong> group in Active Directory.</li>
+    <li>Make sure an expiration date is set on that account.</li>
+  </ol>
+</section>
+```
+
+- [ ] **Step 2: Replace the Section 5 stub with the Script Options content**
+
+In `docs/admin-guide.html`, replace:
+
+```html
+<section id="options">
+  <h2>5. Script Options</h2>
+  <p>Content coming in Task 3.</p>
+</section>
+```
+
+With:
+
+```html
+<section id="options">
+  <h2>5. Script Options</h2>
+  <p>The script accepts several options that control how it behaves. The two required ones must be provided every time the script runs (they are included in the scheduled task command). All others are optional.</p>
+  <table>
+    <thead>
+      <tr>
+        <th>Option</th>
+        <th>What it does</th>
+        <th>Required?</th>
+        <th>Default</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><code>-GroupName</code></td>
+        <td>The name of the security group to monitor. This must match exactly what is in Active Directory.</td>
+        <td>Yes</td>
+        <td>&mdash;</td>
+      </tr>
+      <tr>
+        <td><code>-To</code></td>
+        <td>Who receives the alert email. You can list more than one address, separated by commas.</td>
+        <td>Yes</td>
+        <td>&mdash;</td>
+      </tr>
+      <tr>
+        <td><code>-Cc</code></td>
+        <td>Additional people who receive a copy of the email. Optional.</td>
+        <td>No</td>
+        <td>None</td>
+      </tr>
+      <tr>
+        <td><code>-WarnDays</code></td>
+        <td>How many days ahead to look for expiring accounts.</td>
+        <td>No</td>
+        <td>14</td>
+      </tr>
+      <tr>
+        <td><code>-Setup</code></td>
+        <td>Runs the first-time setup wizard. Also used when updating the security credential after it expires.</td>
+        <td>No</td>
+        <td>Off</td>
+      </tr>
+      <tr>
+        <td><code>-ReportOnly</code></td>
+        <td>Preview mode &mdash; shows what the email would say without actually sending it. Useful for testing.</td>
+        <td>No</td>
+        <td>Off</td>
+      </tr>
+      <tr>
+        <td><code>-Diagnostics</code></td>
+        <td>Prints extra detail to the screen while running. Useful when troubleshooting a problem.</td>
+        <td>No</td>
+        <td>Off</td>
+      </tr>
+      <tr>
+        <td><code>-LogHistory</code></td>
+        <td>How many days of log files to keep before they are automatically deleted.</td>
+        <td>No</td>
+        <td>30</td>
+      </tr>
+      <tr>
+        <td><code>-SkipUpdateCheck</code></td>
+        <td>Skips checking online for a newer version of the script at startup.</td>
+        <td>No</td>
+        <td>Off</td>
+      </tr>
+    </tbody>
+  </table>
+</section>
+```
+
+- [ ] **Step 3: Verify sections 4-5 in a browser**
+
+Open `docs/admin-guide.html` in a browser. Verify:
+- Section 4 shows an intro paragraph, a "What this means" bullet list, and a numbered "Managing group membership" list
+- Section 5 shows an intro paragraph followed by a table with 9 rows, each with a code-styled option name
+- The table header row is dark blue with white text
+- Every other data row has a light blue background (alternating stripes)
+
+- [ ] **Step 4: Commit**
+
+```bash
+git add docs/admin-guide.html
+git commit -m "docs: fill in admin guide sections 4-5"
+```
+
+---
+
+### Task 4: Sections 6 and 7 — First-Time Setup, Scheduled Task
+
+**Files:**
+- Modify: `docs/admin-guide.html`
+
+- [ ] **Step 1: Replace the Section 6 stub with the First-Time Setup content**
+
+In `docs/admin-guide.html`, replace:
+
+```html
+<section id="first-time-setup">
+  <h2>6. First-Time Setup</h2>
+  <p>Content coming in Task 4.</p>
+</section>
+```
+
+With:
+
+```html
+<section id="first-time-setup">
+  <h2>6. First-Time Setup</h2>
+  <p>Before the script can send email, you need to run a one-time setup. This stores the Microsoft 365 connection details securely on the computer where the script will run.</p>
+  <div class="note">
+    <p><strong>Before you begin:</strong> Complete <a href="#app-registration">Section 3</a> (App Registration) first and have your Tenant ID, Client ID, and security credential ready.</p>
+  </div>
+  <h3>Setup walkthrough</h3>
+  <ol>
+    <li>Open <strong>PowerShell</strong> on the server where the script is installed. <em>Important: if you are setting this up for a scheduled task, open PowerShell as the service account that will run the task &mdash; see the note below and <a href="#scheduled-task">Section 7</a>.</em></li>
+    <li>Navigate to the folder where the script is saved. For example, if the script is in <code>C:\Scripts\contractor-expiration-alert</code>, type: <code>cd C:\Scripts\contractor-expiration-alert</code> and press Enter.</li>
+    <li>Run the setup command, replacing the email address with your actual recipient:
+      <br><br><code>.\Send-ContractorExpirationAlert.ps1 -GroupName 'Contractors' -To 'alerts@yourcompany.com' -Setup</code></li>
+    <li>The script will display a checklist of prerequisites. Press Enter to continue.</li>
+    <li>When prompted for <strong>Tenant ID</strong>, paste the value you copied from the portal and press Enter.</li>
+    <li>When prompted for <strong>Client ID</strong>, paste the value and press Enter.</li>
+    <li>When prompted for the <strong>Security Credential</strong>, paste the value and press Enter. <em>The cursor will not move while you type or paste &mdash; this is normal. The value is hidden for security.</em></li>
+    <li>When prompted for the <strong>From address</strong>, type the shared mailbox address the script will send email from and press Enter.</li>
+    <li>The script will test the values against Microsoft's servers. If everything is correct, it saves the configuration and displays a success message. If there is an error, it will describe what went wrong &mdash; double-check that the values were copied correctly and that admin consent was granted (Step 7 in <a href="#app-registration">Section 3</a>).</li>
+  </ol>
+  <div class="note">
+    <p><strong>Why does the account used for setup matter?</strong> The configuration file is protected by Windows and can only be read by the same Windows account that created it. If the scheduled task runs as a different account than the one that ran setup, the script will not find its configuration and will not run. When in doubt, re-run setup while using the service account (see <a href="#scheduled-task">Section 7</a>).</p>
+  </div>
+</section>
+```
+
+- [ ] **Step 2: Replace the Section 7 stub with the Scheduled Task content**
+
+In `docs/admin-guide.html`, replace:
+
+```html
+<section id="scheduled-task">
+  <h2>7. Scheduled Task</h2>
+  <p>Content coming in Task 4.</p>
+</section>
+```
+
+With:
+
+```html
+<section id="scheduled-task">
+  <h2>7. Scheduled Task</h2>
+  <p>The script is meant to run automatically every day so that no one has to remember to run it manually.</p>
+  <h3>How the task works</h3>
+  <ul>
+    <li>The task runs daily at a configured time (for example, 10:00 AM).</li>
+    <li>It runs as a specific Windows service account &mdash; a user account created just for this purpose.</li>
+    <li>That service account must have been used to run <code>-Setup</code> first. Without this, the script cannot find its configuration and will not run. See <a href="#first-time-setup">Section 6</a>.</li>
+    <li>A log file is saved automatically in the <code>logs</code> folder inside the script's directory after each run. Log files are named by date and time (for example, <code>ContractorExpirationAlert_2026-05-07_100001.txt</code>). Logs older than 30 days are deleted automatically.</li>
+  </ul>
+  <h3>Checking that the task is running</h3>
+  <ol>
+    <li>Open <strong>Task Scheduler</strong> (search for it in the Start menu).</li>
+    <li>Find the task named <strong>Contractor Expiration Alert</strong>.</li>
+    <li>Look at the <strong>Last Run Time</strong> and <strong>Last Run Result</strong> columns:
+      <ul>
+        <li>A result of <strong>0x0</strong> means the task completed successfully.</li>
+        <li>Any other value indicates a problem &mdash; open the most recent log file in the <code>logs</code> folder to see what went wrong.</li>
+      </ul>
+    </li>
+  </ol>
+  <h3>If the task stops running after a server restart or Windows Update</h3>
+  <p>Occasionally, Windows Updates or server restarts can disable scheduled tasks. Open Task Scheduler, find the Contractor Expiration Alert task, and check that it is not disabled. If it is disabled, right-click it and choose <strong>Enable</strong>.</p>
+</section>
+```
+
+- [ ] **Step 3: Verify sections 6-7 in a browser**
+
+Open `docs/admin-guide.html` in a browser. Verify:
+- Section 6 shows a yellow note box before the numbered list
+- The note box links to "Section 3" and the link works
+- The numbered list has 9 steps, with inline `<code>` styling for the PowerShell command in step 3
+- Section 7 shows three sub-sections ("How the task works," "Checking that the task is running," "If the task stops running")
+- The log file name example appears in monospace (`ContractorExpirationAlert_2026-05-07_100001.txt`)
+- The note box at the end of section 6 links to Section 7 and the link jumps correctly
+
+- [ ] **Step 4: Commit**
+
+```bash
+git add docs/admin-guide.html
+git commit -m "docs: fill in admin guide sections 6-7"
+```
+
+---
+
+### Task 5: Sections 8 and 9 — Secret Rotation, Troubleshooting + final verification
+
+**Files:**
+- Modify: `docs/admin-guide.html`
+
+- [ ] **Step 1: Replace the Section 8 stub with the Secret Rotation content**
+
+In `docs/admin-guide.html`, replace:
+
+```html
+<section id="secret-rotation">
+  <h2>8. Renewing the Security Credential</h2>
+  <p>Content coming in Task 5.</p>
+</section>
+```
+
+With:
+
+```html
+<section id="secret-rotation">
+  <h2>8. Renewing the Security Credential</h2>
+  <p>The security credential (the "password" that allows the script to send email) has an expiration date &mdash; typically 24 months from when it was created. When it expires, the script will stop sending emails and log an error.</p>
+  <div class="note">
+    <p><strong>Recommended:</strong> Set a calendar reminder 30 days before the credential expires. You can find the expiration date in Microsoft's cloud portal under the app registration's Certificates &amp; secrets page.</p>
+  </div>
+  <h3>What to do when the credential expires</h3>
+  <ol>
+    <li>Sign in to <strong>Microsoft's cloud portal</strong> at <code>entra.microsoft.com</code> using an administrator account.</li>
+    <li>Go to <strong>App registrations</strong> and open the <em>Contractor Expiration Alert</em> app.</li>
+    <li>Click <strong>Certificates &amp; secrets</strong> in the left navigation.</li>
+    <li>Click <strong>New client secret</strong>. Give it a description and choose a 24-month expiration. Click <strong>Add</strong>.</li>
+    <li><strong>Important:</strong> Copy the new secret's <strong>Value</strong> immediately &mdash; it is only shown once.</li>
+    <li>Note the new expiration date and update your calendar reminder.</li>
+    <li>On the server, open PowerShell as the service account (the same account used during first-time setup) and run:
+      <br><br><code>.\Send-ContractorExpirationAlert.ps1 -GroupName 'Contractors' -To 'alerts@yourcompany.com' -Setup</code></li>
+    <li>When prompted, enter the same Tenant ID and Client ID as before. When prompted for the security credential, paste the new value.</li>
+    <li>The script will test and save the new credential.</li>
+  </ol>
+  <div class="note">
+    <p><strong>Do not delete the old credential</strong> in the portal until you have confirmed the new one works. You can verify by checking that the next scheduled run completes with a Last Run Result of 0x0 in Task Scheduler.</p>
+  </div>
+</section>
+```
+
+- [ ] **Step 2: Replace the Section 9 stub with the Troubleshooting content**
+
+In `docs/admin-guide.html`, replace:
+
+```html
+<section id="troubleshooting">
+  <h2>9. Troubleshooting</h2>
+  <p>Content coming in Task 5.</p>
+</section>
+```
+
+With:
+
+```html
+<section id="troubleshooting">
+  <h2>9. Troubleshooting</h2>
+  <p>If something does not seem to be working, use this table to find the cause and fix it.</p>
+  <table>
+    <thead>
+      <tr>
+        <th>What you see</th>
+        <th>Likely cause</th>
+        <th>What to do</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>No email received and no accounts are expiring soon</td>
+        <td>The script is working correctly. It only sends email when there is something to report.</td>
+        <td>Open the most recent log file in the <code>logs</code> folder and confirm the script ran. Look for a line that says "Nothing to report."</td>
+      </tr>
+      <tr>
+        <td>No email received but accounts should be expiring</td>
+        <td>The script may not have run, or the contractor accounts are not in the Contractors group.</td>
+        <td>Check Task Scheduler (Last Run Result should be 0x0). Ask IT to verify the accounts are in the Contractors group and have expiration dates set.</td>
+      </tr>
+      <tr>
+        <td>Log file shows "Failed to get access token"</td>
+        <td>The security credential is wrong or has expired.</td>
+        <td>Re-run the script with <code>-Setup</code> as the service account to update the credential. See <a href="#secret-rotation">Section 8</a>.</td>
+      </tr>
+      <tr>
+        <td>Log file shows "No config file found for user"</td>
+        <td>Setup was run under a different Windows account than the one the scheduled task uses.</td>
+        <td>Re-run setup while using the service account. See <a href="#first-time-setup">Section 6</a>.</td>
+      </tr>
+      <tr>
+        <td>Log file shows the email failed to send (permission error)</td>
+        <td>The app registration is missing the email-sending permission, or admin consent was not granted.</td>
+        <td>Ask IT to verify the app registration in the portal &mdash; specifically that Mail.Send is listed under API permissions with a green consent checkmark. See <a href="#app-registration">Section 3</a>.</td>
+      </tr>
+      <tr>
+        <td>Log file shows it could not read the user directory</td>
+        <td>The script cannot reach Active Directory, or the group name does not match exactly.</td>
+        <td>Verify the server is connected to the company network. Ask IT to confirm the group name in Active Directory matches the name used in the scheduled task command.</td>
+      </tr>
+      <tr>
+        <td>The task stopped running after a Windows Update or server restart</td>
+        <td>The scheduled task may have been disabled automatically.</td>
+        <td>Open Task Scheduler, find the Contractor Expiration Alert task, and check that it is enabled. If not, right-click and choose <strong>Enable</strong>.</td>
+      </tr>
+    </tbody>
+  </table>
+  <h3>Checking log files</h3>
+  <p>Log files are stored in the <code>logs</code> folder inside the script's directory. Each file is named with the date and time it was created (for example, <code>ContractorExpirationAlert_2026-05-07_100001.txt</code>). Open the most recent file in Notepad to see what happened during the last run.</p>
+</section>
+```
+
+- [ ] **Step 3: Final browser verification**
+
+Open `docs/admin-guide.html` in a browser and verify the complete document:
+
+1. The Table of Contents has 9 numbered entries. Click each link and confirm it jumps to the correct section heading.
+2. Section 8 shows two yellow note boxes (one before the list, one at the end).
+3. Section 9 shows a table with 7 data rows and a "Checking log files" sub-section below it.
+4. Cross-section links (e.g., the link to "Section 8" in Section 3's note box, the link to "Section 6" in the troubleshooting table) all jump to the correct locations.
+5. Print preview (Ctrl+P or Cmd+P): the document is readable in black and white, no dark backgrounds, no text cut off at page edges.
+
+Also confirm no "Content coming" placeholder text remains:
+
+```bash
+grep -c "Content coming" docs/admin-guide.html
+```
+
+Expected output: `0`
+
+- [ ] **Step 4: Final commit**
+
+```bash
+git add docs/admin-guide.html
+git commit -m "docs: complete admin-guide.html with all 9 sections"
+```
+
+---
+
+## Self-Review
+
+**Spec coverage check:**
+
+| Spec requirement | Task covering it |
+|---|---|
+| TOC with 9 linked anchors | Task 1 |
+| Section 1: Overview (what, why, how) | Task 2 |
+| Section 2: Requirements (5 items) | Task 2 |
+| Section 3: App Registration (9 steps, note box) | Task 2 |
+| Section 4: Contractors group (behavior, membership) | Task 3 |
+| Section 5: All 9 parameters in a table | Task 3 |
+| Section 6: First-time setup walkthrough (9 steps, 2 note boxes) | Task 4 |
+| Section 7: Scheduled task, verification steps, restart note | Task 4 |
+| Section 8: Secret rotation (calendar note, 9 steps, caution box) | Task 5 |
+| Section 9: 7-row troubleshooting table + log file explanation | Task 5 |
+| Inline CSS, no external dependencies | Task 1 |
+| Print-friendly (@media print block) | Task 1 |
+| `<code>` styling for commands | All content tasks |
+| Plain English, no jargon | All content tasks |
+| "the script" not "the tool" | All content tasks |
+
+**Placeholder scan:** No TBD or TODO items. Every task contains the actual HTML to write.
+
+**Internal consistency:**
+- Section IDs match TOC hrefs: `overview`, `requirements`, `app-registration`, `contractors-group`, `options`, `first-time-setup`, `scheduled-task`, `secret-rotation`, `troubleshooting`
+- Cross-links between sections (Section 3 note → Section 8; Section 6 → Section 7; troubleshooting → Sections 3, 6, 8) all reference the correct IDs
+- Log file name format (`ContractorExpirationAlert_yyyy-MM-dd_HHmmss.txt`) matches the actual script at line 232
+
+**Scope:** Single deliverable, single file, five tasks. Appropriate scope for one implementation session.
