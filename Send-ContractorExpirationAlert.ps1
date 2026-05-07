@@ -253,6 +253,22 @@ Write-Host "  Time     : $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')" -ForegroundC
 Write-Host "  Version  : $ScriptVersion" -ForegroundColor Cyan
 Write-Host ('=' * 70) -ForegroundColor Cyan
 
+# ── Config / setup ───────────────────────────────────────────────────────────
+$configPath = Get-AlertConfigPath
+if ($Setup) {
+    Invoke-SetupWizard -ConfigPath $configPath
+}
+
+$config = $null
+if (-not $ReportOnly) {
+    $config = Read-AlertConfig -Path $configPath
+    if (-not $config) {
+        Write-Warning "No config file found for user '$env:USERNAME' -- run the script manually with -Setup to complete first-time configuration."
+        if ($transcriptStarted) { Stop-Transcript | Out-Null }
+        exit 1
+    }
+}
+
 # ── AD module check ──────────────────────────────────────────────────────────
 if (-not (Get-Module -ListAvailable -Name ActiveDirectory)) {
     Write-Error 'ActiveDirectory module is not available. Install RSAT or run on a domain-joined machine with the module present.'
@@ -452,20 +468,6 @@ $htmlBody = Build-HtmlEmail `
 
 $subject = "Contractor Account Expiration Alert - $($expiringUsers.Count) account(s) expiring within $WarnDays days"
 
-$mailParams = @{
-    From       = $FromAddress
-    To         = $To
-    Subject    = $subject
-    Body       = $htmlBody
-    BodyAsHtml = $true
-    SmtpServer = $SmtpServer
-    Port       = $SmtpPort
-    Encoding   = 'UTF8'
-}
-if ($Cc)         { $mailParams['Cc']         = $Cc }
-if ($Credential) { $mailParams['Credential'] = $Credential }
-if ($UseSSL)     { $mailParams['UseSsl']     = $true }
-
 if ($ReportOnly) {
     Write-Host ''
     Write-Host '[REPORT ONLY] Would send email:' -ForegroundColor Yellow
@@ -476,11 +478,37 @@ if ($ReportOnly) {
     Write-Host "  No-expiry accounts : $($noExpirationUsers.Count)" -ForegroundColor Yellow
 } else {
     Write-Host "[INFO] Sending email to: $($To -join ', ')..." -ForegroundColor Cyan
+
     try {
-        Send-MailMessage @mailParams -WarningAction SilentlyContinue -ErrorAction Stop
+        $token = Get-GraphAccessToken `
+            -TenantId     $config.TenantId `
+            -ClientId     $config.ClientId `
+            -ClientSecret $config.ClientSecret
+    } catch {
+        $statusCode = $_.Exception.Response.StatusCode.value__
+        $hint = if ($statusCode -in 400, 401) {
+            ' Your client secret may be wrong or expired -- re-run with -Setup to update the config.'
+        } else { '' }
+        Write-Warning "Failed to get access token: $($_.Exception.Message).$hint"
+        if ($transcriptStarted) { Stop-Transcript | Out-Null }
+        exit 1
+    }
+
+    try {
+        Send-GraphMail `
+            -AccessToken $token `
+            -FromAddress $config.FromAddress `
+            -To          $To `
+            -Cc          $Cc `
+            -Subject     $subject `
+            -HtmlBody    $htmlBody
         Write-Host '[INFO] Email sent successfully.' -ForegroundColor Green
     } catch {
-        Write-Warning "Failed to send email: $($_.Exception.Message)"
+        $statusCode = $_.Exception.Response.StatusCode.value__
+        $hint = if ($statusCode -in 401, 403) {
+            ' Your client secret may be wrong or expired -- re-run with -Setup to update the config.'
+        } else { '' }
+        Write-Warning "Failed to send email: $($_.Exception.Message).$hint"
         if ($transcriptStarted) { Stop-Transcript | Out-Null }
         exit 1
     }
