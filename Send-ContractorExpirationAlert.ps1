@@ -355,8 +355,7 @@ function Build-HtmlEmail {
         [object[]] $NoExpirationUsers,
         [int]      $WarnDays,
         [string]   $GroupName,
-        [string]   $ScriptVersion,
-        [string]   $SmtpServer
+        [string]   $ScriptVersion
     )
 
     $runTime = Get-Date -Format 'yyyy-MM-dd HH:mm:ss'
@@ -439,7 +438,7 @@ $table1Html
 $table2Html
     <hr style="border:none; border-top:1px solid #eee; margin:24px 0 12px 0;">
     <p style="font-size:12px; color:#aaa; margin:0;">
-        Send-ContractorExpirationAlert v$ScriptVersion &nbsp;|&nbsp; SMTP: $([System.Net.WebUtility]::HtmlEncode($SmtpServer))
+        Send-ContractorExpirationAlert v$ScriptVersion &nbsp;|&nbsp; Microsoft Graph
     </p>
 
 </div>
@@ -454,8 +453,7 @@ $htmlBody = Build-HtmlEmail `
     -NoExpirationUsers $noExpirationUsers `
     -WarnDays          $WarnDays `
     -GroupName         $GroupName `
-    -ScriptVersion     $ScriptVersion `
-    -SmtpServer        $SmtpServer
+    -ScriptVersion     $ScriptVersion
 
 $subject = "Contractor Account Expiration Alert - $($expiringUsers.Count) account(s) expiring within $WarnDays days"
 
