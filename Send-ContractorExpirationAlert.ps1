@@ -58,6 +58,8 @@ param(
 
 $ScriptVersion   = '2.0.0'
 $ScriptUpdateUrl = 'https://raw.githubusercontent.com/iamsplendid/contractor-expiration-alert/master/Send-ContractorExpirationAlert.ps1'
+$GuideUpdateUrl  = 'https://raw.githubusercontent.com/iamsplendid/contractor-expiration-alert/master/docs/admin-guide.html'
+$GuideLocalPath  = Join-Path $PSScriptRoot 'docs\admin-guide.html'
 
 # ── Helper functions ──────────────────────────────────────────────────────────
 function Test-IsGuid {
@@ -197,34 +199,6 @@ function Invoke-SetupWizard {
     Write-Host ''
 }
 
-# ── Auto-update ──────────────────────────────────────────────────────────────
-if (-not $SkipUpdateCheck) {
-    try {
-        $remote = (Invoke-WebRequest -Uri $ScriptUpdateUrl -UseBasicParsing -TimeoutSec 8 -ErrorAction Stop).Content
-        if ($remote -match '\$ScriptVersion\s*=\s*[''"]([^''"]+)[''"]') {
-            $remoteVersion = $Matches[1]
-            if ([version]$remoteVersion -gt [version]$ScriptVersion) {
-                Write-Host "[UPDATE] New version $remoteVersion available. Updating..." -ForegroundColor Cyan
-                $scriptPath = $PSCommandPath
-                if ($scriptPath -and (Test-Path $scriptPath)) {
-                    [System.IO.File]::WriteAllText($scriptPath, $remote, [System.Text.Encoding]::UTF8)
-                    Write-Host "[UPDATE] Re-running new version..." -ForegroundColor Green
-                    $fwd = @{} + $PSBoundParameters
-                    $fwd['SkipUpdateCheck'] = $true
-                    & $scriptPath @fwd
-                    exit $LASTEXITCODE
-                } else {
-                    Write-Warning "[UPDATE] Cannot determine script path. Download latest: $ScriptUpdateUrl"
-                }
-            } else {
-                Write-Verbose "[UPDATE] Script is current ($ScriptVersion)."
-            }
-        }
-    } catch {
-        Write-Verbose "[UPDATE] Version check skipped: $($_.Exception.Message)"
-    }
-}
-
 # ── Transcript logging ───────────────────────────────────────────────────────
 $logsDir = Join-Path $PSScriptRoot 'logs'
 if (-not (Test-Path $logsDir)) { New-Item -ItemType Directory -Path $logsDir | Out-Null }
@@ -256,6 +230,74 @@ Write-Host "  WarnDays : $WarnDays" -ForegroundColor Cyan
 Write-Host "  Time     : $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')" -ForegroundColor Cyan
 Write-Host "  Version  : $ScriptVersion" -ForegroundColor Cyan
 Write-Host ('=' * 70) -ForegroundColor Cyan
+
+# ── Auto-update ──────────────────────────────────────────────────────────────
+if (-not $SkipUpdateCheck) {
+    try {
+        $remote = (Invoke-WebRequest -Uri $ScriptUpdateUrl -UseBasicParsing -TimeoutSec 8 -ErrorAction Stop).Content
+        if ($remote -match '\$ScriptVersion\s*=\s*[''"]([^''"]+)[''"]') {
+            $remoteVersion = $Matches[1]
+            if ([version]$remoteVersion -gt [version]$ScriptVersion) {
+                Write-Host "[UPDATE] New version $remoteVersion available. Updating..." -ForegroundColor Cyan
+                $scriptPath = $PSCommandPath
+                if ($scriptPath -and (Test-Path $scriptPath)) {
+                    [System.IO.File]::WriteAllText($scriptPath, $remote, [System.Text.Encoding]::UTF8)
+                    Write-Host "[UPDATE] Re-running new version..." -ForegroundColor Green
+                    if ($transcriptStarted) { Stop-Transcript | Out-Null }
+                    $fwd = @{} + $PSBoundParameters
+                    $fwd['SkipUpdateCheck'] = $true
+                    & $scriptPath @fwd
+                    exit $LASTEXITCODE
+                } else {
+                    Write-Warning "[UPDATE] Cannot determine script path. Download latest: $ScriptUpdateUrl"
+                }
+            } else {
+                Write-Host "[UPDATE] Running current version ($ScriptVersion)." -ForegroundColor Cyan
+            }
+        }
+    } catch {
+        Write-Warning "[UPDATE] Version check skipped: $($_.Exception.Message)"
+    }
+
+    # ── Admin guide update ────────────────────────────────────────────────────
+    try {
+        $remoteGuide = (Invoke-WebRequest -Uri $GuideUpdateUrl -UseBasicParsing -TimeoutSec 8 -ErrorAction Stop).Content
+
+        $remoteGuideVersion = $null
+        if ($remoteGuide -match '<meta\s+name=[''"]version[''"]\s+content=[''"]([^''"]+)[''"]') {
+            $remoteGuideVersion = $Matches[1]
+        }
+
+        $needsUpdate = $false
+        if (-not (Test-Path $GuideLocalPath)) {
+            Write-Host "[UPDATE] Admin guide not found locally. Downloading..." -ForegroundColor Cyan
+            $needsUpdate = $true
+        } elseif ($remoteGuideVersion) {
+            $localGuideVersion = $null
+            $localContent = [System.IO.File]::ReadAllText($GuideLocalPath)
+            if ($localContent -match '<meta\s+name=[''"]version[''"]\s+content=[''"]([^''"]+)[''"]') {
+                $localGuideVersion = $Matches[1]
+            }
+            if (-not $localGuideVersion -or ([version]$remoteGuideVersion -gt [version]$localGuideVersion)) {
+                Write-Host "[UPDATE] Admin guide update available ($localGuideVersion -> $remoteGuideVersion). Updating..." -ForegroundColor Cyan
+                $needsUpdate = $true
+            } else {
+                Write-Host "[UPDATE] Admin guide is current ($localGuideVersion)." -ForegroundColor Cyan
+            }
+        } else {
+            Write-Host "[UPDATE] Admin guide is current." -ForegroundColor Cyan
+        }
+
+        if ($needsUpdate) {
+            $guideDir = Split-Path $GuideLocalPath
+            if (-not (Test-Path $guideDir)) { New-Item $guideDir -ItemType Directory | Out-Null }
+            [System.IO.File]::WriteAllText($GuideLocalPath, $remoteGuide, [System.Text.Encoding]::UTF8)
+            Write-Host "[UPDATE] Admin guide updated: $GuideLocalPath" -ForegroundColor Green
+        }
+    } catch {
+        Write-Warning "[UPDATE] Admin guide check skipped: $($_.Exception.Message)"
+    }
+}
 
 # ── Config / setup ───────────────────────────────────────────────────────────
 $configPath = Get-AlertConfigPath
