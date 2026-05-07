@@ -92,6 +92,57 @@ function Save-AlertConfig {
     $Config | Export-Clixml -Path $Path
 }
 
+function Get-GraphAccessToken {
+    param(
+        [string]$TenantId,
+        [string]$ClientId,
+        [SecureString]$ClientSecret
+    )
+    $ptr    = [Runtime.InteropServices.Marshal]::SecureStringToGlobalAllocUnicode($ClientSecret)
+    $secret = [Runtime.InteropServices.Marshal]::PtrToStringUni($ptr)
+    [Runtime.InteropServices.Marshal]::ZeroFreeGlobalAllocUnicode($ptr)
+
+    $response = Invoke-RestMethod -Method Post `
+        -Uri "https://login.microsoftonline.com/$TenantId/oauth2/v2.0/token" `
+        -Body @{
+            grant_type    = 'client_credentials'
+            client_id     = $ClientId
+            client_secret = $secret
+            scope         = 'https://graph.microsoft.com/.default'
+        } `
+        -ErrorAction Stop
+
+    return $response.access_token
+}
+
+function Send-GraphMail {
+    param(
+        [string]   $AccessToken,
+        [string]   $FromAddress,
+        [string[]] $To,
+        [string[]] $Cc,
+        [string]   $Subject,
+        [string]   $HtmlBody
+    )
+    $toRecipients = @($To | ForEach-Object { @{ emailAddress = @{ address = $_ } } })
+    $ccRecipients = @(if ($Cc) { $Cc | ForEach-Object { @{ emailAddress = @{ address = $_ } } } })
+
+    $message = [ordered]@{
+        subject      = $Subject
+        body         = @{ contentType = 'HTML'; content = $HtmlBody }
+        toRecipients = $toRecipients
+    }
+    if ($ccRecipients.Count -gt 0) { $message['ccRecipients'] = $ccRecipients }
+
+    $payload = @{ message = $message; saveToSentItems = $false } | ConvertTo-Json -Depth 10
+
+    Invoke-RestMethod -Method Post `
+        -Uri "https://graph.microsoft.com/v1.0/users/$FromAddress/sendMail" `
+        -Headers @{ Authorization = "Bearer $AccessToken"; 'Content-Type' = 'application/json' } `
+        -Body $payload `
+        -ErrorAction Stop | Out-Null
+}
+
 # ── Auto-update ──────────────────────────────────────────────────────────────
 if (-not $SkipUpdateCheck) {
     try {
