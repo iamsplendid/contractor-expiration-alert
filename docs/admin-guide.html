@@ -153,7 +153,7 @@ section { margin-bottom: 0.5rem; }
     <li><strong>PowerShell</strong> &mdash; included with Windows; no separate installation needed.</li>
     <li><strong>RSAT (Remote Server Administration Tools)</strong> &mdash; a free Windows add-on that lets PowerShell read user account information. Your IT administrator can install this. On Windows Server, it is usually already available.</li>
     <li><strong>A Microsoft 365 shared mailbox</strong> for the script to send email from. A shared mailbox does not require a license. Ask your IT administrator if you do not already have one set up.</li>
-    <li><strong>A security permission set up in Microsoft's cloud portal</strong> &mdash; this tells Microsoft 365 that the script is allowed to send email on behalf of your organization. This is a one-time step covered in the next section.</li>
+    <li><strong>A security permission set up in Microsoft's cloud portal</strong> &mdash; this tells Microsoft 365 that the script is allowed to send email on behalf of your organization. This is a one-time step covered in the next section. An administrator account is required.</li>
   </ul>
 </section>
 
@@ -180,7 +180,7 @@ section { margin-bottom: 0.5rem; }
   </ol>
   <p>You now have the three values needed for first-time setup: Tenant ID, Client ID, and the security credential. Keep these in a secure place.</p>
   <div class="note">
-    <p><strong>What is the security credential?</strong> Think of it like a password for the script. It proves to Microsoft that the script has permission to send email on behalf of your organization. It expires after the period you chose (typically 24 months) and must be renewed &mdash; see <a href="#secret-rotation">Section 8</a> for instructions.</p>
+    <p><strong>What is the security credential?</strong> Think of it like a password for the script. It proves to Microsoft that the script has permission to send email on behalf of your organization. It expires after the period you chose (typically 24 months) and must be renewed &mdash; see <a href="#secret-rotation">Section 8 &mdash; Renewing the Security Credential</a> for instructions.</p>
   </div>
 </section>
 
