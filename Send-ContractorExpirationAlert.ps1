@@ -56,7 +56,7 @@ param(
                                     [switch]   $SkipUpdateCheck
 )
 
-$ScriptVersion   = '2.0.0'
+$ScriptVersion   = '2.0.1'
 $ScriptUpdateUrl = 'https://raw.githubusercontent.com/iamsplendid/contractor-expiration-alert/master/Send-ContractorExpirationAlert.ps1'
 $GuideUpdateUrl  = 'https://raw.githubusercontent.com/iamsplendid/contractor-expiration-alert/master/docs/admin-guide.html'
 $GuideLocalPath  = Join-Path $PSScriptRoot 'docs\admin-guide.html'
