@@ -56,3 +56,56 @@ Describe 'Test-IsEmail' {
         Test-IsEmail '' | Should -Be $false
     }
 }
+
+Describe 'Save-AlertConfig / Read-AlertConfig' {
+    BeforeAll {
+        # Keep in sync with Send-ContractorExpirationAlert.ps1
+        function Get-AlertConfigPath {
+            return Join-Path $PSScriptRoot "config\$env:USERNAME.xml"
+        }
+
+        # Keep in sync with Send-ContractorExpirationAlert.ps1
+        function Read-AlertConfig {
+            param([string]$Path = (Get-AlertConfigPath))
+            if (-not (Test-Path $Path)) { return $null }
+            return Import-Clixml -Path $Path
+        }
+
+        # Keep in sync with Send-ContractorExpirationAlert.ps1
+        function Save-AlertConfig {
+            param([hashtable]$Config, [string]$Path = (Get-AlertConfigPath))
+            $dir = Split-Path $Path
+            if (-not (Test-Path $dir)) { New-Item $dir -ItemType Directory | Out-Null }
+            $Config | Export-Clixml -Path $Path
+        }
+    }
+
+    It 'round-trips all four fields including the encrypted secret' {
+        $tempPath = Join-Path $TestDrive "config\$env:USERNAME.xml"
+        $null = New-Item (Split-Path $tempPath) -ItemType Directory -Force
+
+        $config = @{
+            TenantId     = 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee'
+            ClientId     = 'ffffffff-0000-1111-2222-333333333333'
+            ClientSecret = ConvertTo-SecureString 'test-secret' -AsPlainText -Force
+            FromAddress  = 'alerts@test.com'
+        }
+        Save-AlertConfig -Config $config -Path $tempPath
+        Test-Path $tempPath | Should -Be $true
+        $loaded = Read-AlertConfig -Path $tempPath
+        $loaded.ClientSecret | Should -BeOfType [System.Security.SecureString]
+
+        $loaded.TenantId    | Should -Be 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee'
+        $loaded.ClientId    | Should -Be 'ffffffff-0000-1111-2222-333333333333'
+        $loaded.FromAddress | Should -Be 'alerts@test.com'
+
+        $ptr   = [Runtime.InteropServices.Marshal]::SecureStringToGlobalAllocUnicode($loaded.ClientSecret)
+        $plain = [Runtime.InteropServices.Marshal]::PtrToStringUni($ptr)
+        [Runtime.InteropServices.Marshal]::ZeroFreeGlobalAllocUnicode($ptr)
+        $plain | Should -Be 'test-secret'
+    }
+
+    It 'returns null when the config file does not exist' {
+        Read-AlertConfig -Path (Join-Path $TestDrive 'nonexistent.xml') | Should -BeNullOrEmpty
+    }
+}

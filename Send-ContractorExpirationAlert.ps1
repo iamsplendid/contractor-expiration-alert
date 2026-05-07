@@ -75,6 +75,23 @@ function Test-IsEmail {
     return $Value -match '^[^@\s]+@[^@\s]+\.[^@\s]+$'
 }
 
+function Get-AlertConfigPath {
+    return Join-Path $PSScriptRoot "config\$env:USERNAME.xml"
+}
+
+function Read-AlertConfig {
+    param([string]$Path = (Get-AlertConfigPath))
+    if (-not (Test-Path $Path)) { return $null }
+    return Import-Clixml -Path $Path
+}
+
+function Save-AlertConfig {
+    param([hashtable]$Config, [string]$Path = (Get-AlertConfigPath))
+    $dir = Split-Path $Path
+    if (-not (Test-Path $dir)) { New-Item $dir -ItemType Directory | Out-Null }
+    $Config | Export-Clixml -Path $Path
+}
+
 # ── Auto-update ──────────────────────────────────────────────────────────────
 if (-not $SkipUpdateCheck) {
     try {
