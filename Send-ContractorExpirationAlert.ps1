@@ -64,6 +64,17 @@ param(
 $ScriptVersion   = '1.1.0'
 $ScriptUpdateUrl = 'https://raw.githubusercontent.com/iamsplendid/contractor-expiration-alert/master/Send-ContractorExpirationAlert.ps1'
 
+# ── Helper functions ──────────────────────────────────────────────────────────
+function Test-IsGuid {
+    param([string]$Value)
+    return $Value -match '^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$'
+}
+
+function Test-IsEmail {
+    param([string]$Value)
+    return $Value -match '^[^@\s]+@[^@\s]+\.[^@\s]+$'
+}
+
 # ── Auto-update ──────────────────────────────────────────────────────────────
 if (-not $SkipUpdateCheck) {
     try {
