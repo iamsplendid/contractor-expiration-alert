@@ -274,12 +274,51 @@ section { margin-bottom: 0.5rem; }
 
 <section>
   <h2 id="first-time-setup">6. First-Time Setup</h2>
-  <p>Content coming in Task 4.</p>
+  <p>Before the script can send email, you need to run a one-time setup. This stores the Microsoft 365 connection details securely on the computer where the script will run.</p>
+  <div class="note">
+    <p><strong>Before you begin:</strong> Complete <a href="#app-registration">Section 3</a> (Setting Up the Security Permission) first and have your Tenant ID, Client ID, and security credential ready.</p>
+  </div>
+  <h3>Setup walkthrough</h3>
+  <ol>
+    <li>Open <strong>PowerShell</strong> on the server where the script is installed. <em>Important: if you are setting this up for a scheduled task, open PowerShell as the service account that will run the task &mdash; see the note below and <a href="#scheduled-task">Section 7</a>.</em></li>
+    <li>Navigate to the folder where the script is saved. For example, if the script is in <code>C:\Scripts\contractor-expiration-alert</code>, type <code>cd C:\Scripts\contractor-expiration-alert</code> and press Enter.</li>
+    <li>Run the setup command, replacing the email address with your actual recipient:
+      <br><br><code>.\Send-ContractorExpirationAlert.ps1 -GroupName 'Contractors' -To 'alerts@yourcompany.com' -Setup</code></li>
+    <li>The script will display a checklist of prerequisites. Press Enter to continue.</li>
+    <li>When prompted for <strong>Tenant ID</strong>, paste the value you copied from the portal and press Enter.</li>
+    <li>When prompted for <strong>Client ID</strong>, paste the value and press Enter.</li>
+    <li>When prompted for the <strong>Security Credential</strong>, paste the value and press Enter. <em>The cursor will not move while you type or paste &mdash; this is normal. The value is hidden for security.</em></li>
+    <li>When prompted for the <strong>From address</strong>, type the shared mailbox address the script will send email from and press Enter.</li>
+    <li>The script will test the values against Microsoft's servers. If everything is correct, it saves the configuration and displays a success message. If there is an error, it will describe what went wrong &mdash; double-check that the values were copied correctly and that admin consent was granted (Step 7 in <a href="#app-registration">Section 3</a>).</li>
+  </ol>
+  <div class="note">
+    <p><strong>Why does the account used for setup matter?</strong> The configuration file is protected by Windows and can only be read by the same Windows account that created it. If the scheduled task runs as a different account than the one that ran setup, the script will not find its configuration and will not run. When in doubt, re-run setup while using the service account (see <a href="#scheduled-task">Section 7</a>).</p>
+  </div>
 </section>
 
 <section>
   <h2 id="scheduled-task">7. Scheduled Task</h2>
-  <p>Content coming in Task 4.</p>
+  <p>The script is meant to run automatically every day so that no one has to remember to run it manually.</p>
+  <h3>How the task works</h3>
+  <ul>
+    <li>The task runs daily at a configured time (for example, 10:00 AM).</li>
+    <li>It runs as a specific Windows service account &mdash; a user account created just for this purpose.</li>
+    <li>That service account must have been used to run <code>-Setup</code> first. Without this, the script cannot find its configuration and will not run. See <a href="#first-time-setup">Section 6</a>.</li>
+    <li>A log file is saved automatically in the <code>logs</code> folder inside the script's directory after each run. Log files are named by date and time (for example, <code>ContractorExpirationAlert_2026-05-07_100001.txt</code>). Logs older than 30 days are deleted automatically.</li>
+  </ul>
+  <h3>Checking that the task is running</h3>
+  <ol>
+    <li>Open <strong>Task Scheduler</strong> (search for it in the Start menu).</li>
+    <li>Find the task named <strong>Contractor Expiration Alert</strong>.</li>
+    <li>Look at the <strong>Last Run Time</strong> and <strong>Last Run Result</strong> columns:
+      <ul>
+        <li>A result of <strong>0x0</strong> means the task completed successfully.</li>
+        <li>Any other value indicates a problem &mdash; open the most recent log file in the <code>logs</code> folder to see what went wrong.</li>
+      </ul>
+    </li>
+  </ol>
+  <h3>If the task stops running after a server restart or Windows Update</h3>
+  <p>Occasionally, Windows Updates or server restarts can disable scheduled tasks. Open Task Scheduler, find the Contractor Expiration Alert task, and check that it is not disabled. If it is disabled, right-click it and choose <strong>Enable</strong>.</p>
 </section>
 
 <section>
