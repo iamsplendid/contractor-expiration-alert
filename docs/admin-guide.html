@@ -323,12 +323,79 @@ section { margin-bottom: 0.5rem; }
 
 <section>
   <h2 id="secret-rotation">8. Renewing the Security Credential</h2>
-  <p>Content coming in Task 5.</p>
+  <p>The security credential (the "password" that allows the script to send email) has an expiration date &mdash; typically 24 months from when it was created. When it expires, the script will stop sending emails and log an error.</p>
+  <div class="note">
+    <p><strong>Recommended:</strong> Set a calendar reminder 30 days before the credential expires. You can find the expiration date in the portal under the app registration's Certificates &amp; secrets page.</p>
+  </div>
+  <h3>What to do when the credential expires</h3>
+  <ol>
+    <li>Sign in to <strong>Microsoft's cloud portal</strong> at <code>entra.microsoft.com</code> using an administrator account.</li>
+    <li>Go to <strong>App registrations</strong> and open the <em>Contractor Expiration Alert</em> app.</li>
+    <li>Click <strong>Certificates &amp; secrets</strong> in the left navigation.</li>
+    <li>Click <strong>New client secret</strong>. Give it a description and choose a 24-month expiration. Click <strong>Add</strong>.</li>
+    <li><strong>Important:</strong> Copy the new secret's <strong>Value</strong> immediately &mdash; it is only shown once.</li>
+    <li>Note the new expiration date and update your calendar reminder.</li>
+    <li>On the server, open PowerShell as the service account (the same account used during first-time setup) and run:
+      <br><br><code>.\Send-ContractorExpirationAlert.ps1 -GroupName 'Contractors' -To 'alerts@yourcompany.com' -Setup</code></li>
+    <li>When prompted, enter the same Tenant ID and Client ID as before. When prompted for the security credential, paste the new value.</li>
+    <li>The script will test and save the new credential.</li>
+  </ol>
+  <div class="note">
+    <p><strong>Do not delete the old credential</strong> in the portal until you have confirmed the new one works. Verify by checking that the next scheduled run completes with a Last Run Result of 0x0 in Task Scheduler.</p>
+  </div>
 </section>
 
 <section>
   <h2 id="troubleshooting">9. Troubleshooting</h2>
-  <p>Content coming in Task 5.</p>
+  <p>If something does not seem to be working, use this table to find the cause and fix it.</p>
+  <table>
+    <thead>
+      <tr>
+        <th>What you see</th>
+        <th>Likely cause</th>
+        <th>What to do</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>No email received and no accounts are expiring soon</td>
+        <td>The script is working correctly. It only sends email when there is something to report.</td>
+        <td>Open the most recent log file in the <code>logs</code> folder and confirm the script ran. Look for a line that says "Nothing to report."</td>
+      </tr>
+      <tr>
+        <td>No email received but accounts should be expiring</td>
+        <td>The script may not have run, or the contractor accounts are not in the Contractors group.</td>
+        <td>Check Task Scheduler (Last Run Result should be 0x0). Ask IT to verify the accounts are in the Contractors group and have expiration dates set.</td>
+      </tr>
+      <tr>
+        <td>Log file shows "Failed to get access token"</td>
+        <td>The security credential is wrong or has expired.</td>
+        <td>Re-run the script with <code>-Setup</code> as the service account to update the credential. See <a href="#secret-rotation">Section 8 &mdash; Renewing the Security Credential</a>.</td>
+      </tr>
+      <tr>
+        <td>Log file shows "No config file found for user"</td>
+        <td>Setup was run under a different Windows account than the one the scheduled task uses.</td>
+        <td>Re-run setup while using the service account. See <a href="#first-time-setup">Section 6 &mdash; First-Time Setup</a>.</td>
+      </tr>
+      <tr>
+        <td>Log file shows the email failed to send (permission error)</td>
+        <td>The app registration is missing the email-sending permission, or admin consent was not granted.</td>
+        <td>Ask IT to verify the app registration in the portal &mdash; specifically that Mail.Send is listed under API permissions with a green consent checkmark. See <a href="#app-registration">Section 3 &mdash; Setting Up the Security Permission</a>.</td>
+      </tr>
+      <tr>
+        <td>Log file shows it could not read the user directory</td>
+        <td>The script cannot reach Active Directory, or the group name does not match exactly.</td>
+        <td>Verify the server is connected to the company network. Ask IT to confirm the group name in Active Directory matches the name used in the scheduled task command.</td>
+      </tr>
+      <tr>
+        <td>The task stopped running after a Windows Update or server restart</td>
+        <td>The scheduled task may have been disabled automatically.</td>
+        <td>Open Task Scheduler, find the Contractor Expiration Alert task, and check that it is enabled. If not, right-click and choose <strong>Enable</strong>.</td>
+      </tr>
+    </tbody>
+  </table>
+  <h3>Checking log files</h3>
+  <p>Log files are stored in the <code>logs</code> folder inside the script's directory. Each file is named with the date and time it was created (for example, <code>ContractorExpirationAlert_2026-05-07_100001.txt</code>). Open the most recent file in Notepad to see what happened during the last run.</p>
 </section>
 
 </div>
