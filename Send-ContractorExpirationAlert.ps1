@@ -56,7 +56,7 @@ param(
                                     [switch]   $SkipUpdateCheck
 )
 
-$ScriptVersion   = '1.1.0'
+$ScriptVersion   = '2.0.0'
 $ScriptUpdateUrl = 'https://raw.githubusercontent.com/iamsplendid/contractor-expiration-alert/master/Send-ContractorExpirationAlert.ps1'
 
 # ── Helper functions ──────────────────────────────────────────────────────────
