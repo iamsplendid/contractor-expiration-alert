@@ -55,7 +55,8 @@ code {
     border: 1px solid #ccd9ef;
     border-radius: 3px;
     padding: 0.1em 0.45em;
-    white-space: nowrap;
+    white-space: pre-wrap;
+    overflow-wrap: break-word;
 }
 nav {
     background: #f5f8ff;
@@ -64,16 +65,16 @@ nav {
     padding: 1.25rem 1.75rem;
     margin: 0.5rem 0 2rem;
 }
-nav h2 {
+.toc-title {
     font-size: 1rem;
-    border: none;
-    margin-top: 0;
+    font-weight: bold;
     margin-bottom: 0.6rem;
     color: #333;
 }
 nav ol { margin-bottom: 0; }
 nav a { color: #1a3a6b; text-decoration: none; }
 nav a:hover { text-decoration: underline; }
+nav a:focus-visible { outline: 2px solid #1a3a6b; outline-offset: 2px; }
 table {
     width: 100%;
     border-collapse: collapse;
@@ -109,6 +110,7 @@ section { margin-bottom: 0.5rem; }
     table { page-break-inside: avoid; }
     .note { page-break-inside: avoid; border-left-color: #999; }
     code { background: none; border: none; }
+    nav { background: none; border-color: #999; }
     nav a::after { content: " (see section " attr(href) ")"; font-size: 0.85em; color: #555; }
     th { background: #eee; color: #000; }
 }
@@ -117,11 +119,10 @@ section { margin-bottom: 0.5rem; }
 <body>
 <div class="container">
 
-<h1>Contractor Expiration Alert</h1>
-<span class="subtitle">Administrator Guide &mdash; version 2.0</span>
+<h1>Contractor Expiration Alert <span class="subtitle">Administrator Guide &mdash; version 2.0</span></h1>
 
-<nav>
-  <h2>Table of Contents</h2>
+<nav aria-label="Table of contents">
+  <p class="toc-title">Table of Contents</p>
   <ol>
     <li><a href="#overview">Overview</a></li>
     <li><a href="#requirements">Requirements</a></li>
