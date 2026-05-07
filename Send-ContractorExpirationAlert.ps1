@@ -4,30 +4,27 @@
 .DESCRIPTION
     Queries all members of an Active Directory security group for accounts whose
     AccountExpirationDate falls within the configured warning window, then sends
-    a single HTML digest email to the configured recipients.
+    a single HTML digest email via Microsoft Graph.
     Accounts with no expiration date set are flagged in a separate section.
     Intended to run as a daily scheduled task.
+
+    On first run, or when -Setup is specified, an interactive wizard collects
+    Entra ID app registration credentials and saves them to an encrypted per-user
+    config file at .\config\<username>.xml.
 .PARAMETER GroupName
     Name of the AD security group whose members are contractor accounts.
 .PARAMETER To
     One or more primary recipient email addresses.
 .PARAMETER Cc
     One or more CC recipient email addresses (optional).
-.PARAMETER SmtpServer
-    SMTP relay hostname used to send the notification email.
-.PARAMETER FromAddress
-    Sender email address for the notification email.
 .PARAMETER WarnDays
     Number of days ahead to warn about expiring accounts. Default: 14.
-.PARAMETER SmtpPort
-    SMTP port. Default: 587.
-.PARAMETER Credential
-    PSCredential for authenticated SMTP submission. Required for Exchange Online (smtp.office365.com:587).
-    If MFA is enabled on the account, supply an app password as the credential password.
-.PARAMETER UseSSL
-    Use STARTTLS when connecting to the SMTP server. Required for smtp.office365.com:587.
+.PARAMETER Setup
+    Force re-run of the first-time setup wizard, even if a config file already
+    exists. Use this to update credentials when the client secret rotates.
 .PARAMETER ReportOnly
     Dry-run switch. Logs what would be sent without actually sending any email.
+    Config file is not required when this switch is used.
 .PARAMETER Diagnostics
     Prints member counts and filter statistics to the console.
 .PARAMETER LogHistory
@@ -35,13 +32,15 @@
 .PARAMETER SkipUpdateCheck
     Skip the automatic version update check at startup.
 .EXAMPLE
-    $cred = Get-Credential
-    .\Send-ContractorExpirationAlert.ps1 -GroupName 'Contractors' -To 'it@contoso.com' -SmtpServer 'smtp.office365.com' -FromAddress 'alerts@contoso.com' -Credential $cred -UseSSL
+    .\Send-ContractorExpirationAlert.ps1 -GroupName 'Contractors' -To 'it@contoso.com' -Setup
 .EXAMPLE
-    .\Send-ContractorExpirationAlert.ps1 -GroupName 'Contractors' -To 'it@contoso.com' -SmtpServer 'smtp.office365.com' -FromAddress 'alerts@contoso.com' -Credential $cred -UseSSL -ReportOnly -Diagnostics
+    .\Send-ContractorExpirationAlert.ps1 -GroupName 'Contractors' -To 'it@contoso.com'
+.EXAMPLE
+    .\Send-ContractorExpirationAlert.ps1 -GroupName 'Contractors' -To 'it@contoso.com' -ReportOnly -Diagnostics
 .NOTES
     Requires: ActiveDirectory PowerShell module (RSAT).
     This script is read-only with respect to Active Directory.
+    Entra ID app registration must have Mail.Send application permission with admin consent.
 #>
 
 [CmdletBinding()]
@@ -49,12 +48,8 @@ param(
     [Parameter(Mandatory = $true)]  [string]   $GroupName,
     [Parameter(Mandatory = $true)]  [string[]] $To,
                                     [string[]] $Cc,
-    [Parameter(Mandatory = $true)]  [string]   $SmtpServer,
-    [Parameter(Mandatory = $true)]  [string]   $FromAddress,
                                     [int]      $WarnDays   = 14,
-                                    [int]         $SmtpPort   = 587,
-                                    [PSCredential]$Credential,
-                                    [switch]   $UseSSL,
+                                    [switch]   $Setup,
                                     [switch]   $ReportOnly,
                                     [switch]   $Diagnostics,
                                     [int]      $LogHistory  = 30,
